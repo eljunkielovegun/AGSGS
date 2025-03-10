@@ -370,22 +370,35 @@ const InPlaceMediaModal = ({
     setIsLoading(false);
   };
 
-  // Touch event handlers for swipe navigation
-  const handleTouchStart = (e) => {
-    if (isMobile && performer && performer.media && performer.media.length > 1) {
-      setSwipeStartX(e.touches[0].clientX);
-      resetControlsTimer();
-    }
-  };
+// State for vertical swipe handling
+const [swipeStartY, setSwipeStartY] = useState(null);
   
-  const handleTouchEnd = (e) => {
-    if (isMobile && swipeStartX !== null && performer && performer.media && performer.media.length > 1) {
-      const endX = e.changedTouches[0].clientX;
-      const diff = swipeStartX - endX;
-      
-      // Only process swipe if it's a significant movement (more than 50px)
-      if (Math.abs(diff) > 50) {
-        if (diff > 0) {
+// Touch event handlers for swipe navigation
+const handleTouchStart = (e) => {
+  if (isMobile) {
+    setSwipeStartX(e.touches[0].clientX);
+    setSwipeStartY(e.touches[0].clientY);
+    resetControlsTimer();
+  }
+};
+
+const handleTouchEnd = (e) => {
+  if (isMobile) {
+    const endX = e.changedTouches[0].clientX;
+    const endY = e.changedTouches[0].clientY;
+    
+    // Calculate horizontal and vertical differences
+    const diffX = swipeStartX !== null ? swipeStartX - endX : 0;
+    const diffY = swipeStartY !== null ? swipeStartY - endY : 0;
+    
+    // Determine if swipe is more horizontal or vertical
+    const isHorizontalSwipe = Math.abs(diffX) > Math.abs(diffY);
+    
+    // Only process swipe if it's a significant movement (more than 50px)
+    if (isHorizontalSwipe) {
+      // Process horizontal swipes for navigation
+      if (Math.abs(diffX) > 50 && performer && performer.media && performer.media.length > 1) {
+        if (diffX > 0) {
           // Swipe left - go to next
           nextMedia();
         } else {
@@ -393,10 +406,18 @@ const InPlaceMediaModal = ({
           prevMedia();
         }
       }
-      
-      setSwipeStartX(null);
+    } else {
+      // Process vertical swipes
+      if (diffY < -80) { // Negative means upward swipe (threshold of 80px)
+        // Swipe up - close modal
+        onClose();
+      }
     }
-  };
+    
+    setSwipeStartX(null);
+    setSwipeStartY(null);
+  }
+};
   
   // Event handlers
   const handleClick = (e) => {
