@@ -169,8 +169,8 @@ const performerData = [
     piece: "Untitled Improvisation",
     instrument: "Electrosteel",
     position: {
-      "x": 90,
-      "y": 61.19
+      "x": 91,
+      "y": 61.8
     }, // Lower right - adjust as needed
     size: 55,
     color: "#673ab7", // Deep Purple
