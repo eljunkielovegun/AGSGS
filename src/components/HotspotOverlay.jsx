@@ -1,6 +1,9 @@
 import React, { lazy, Suspense, useState, useEffect } from 'react';
 import performerData from './PerformerData';
 
+// Lazy-load the MobilePerformerList component
+const MobilePerformerList = lazy(() => import('./MobilePerformerList'));
+
 // Lazy-load the CardDeckHotspot component
 const CardDeckHotspot = lazy(() => 
   import('./CardDeckHotspot')

@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import StageBackground from './components/StageBackground';
 import HotspotOverlay from './components/HotspotOverlay';
+import performerData from './components/PerformerData';
+
+// Lazy-load the MobilePerformerList component
+const MobileList = lazy(() => import('./components/MobilePerformerList'));
 
 function App() {
   return (
