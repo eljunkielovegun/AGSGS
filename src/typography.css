@@ -1,0 +1,60 @@
+/* Logo styling */
+.rice-logo {
+    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.5));
+    transition: transform 0.3s ease;
+  }
+  
+  .rice-logo:hover {
+    transform: scale(1.1);
+  }
+  
+  .site-title {
+    font-family: var(--font-secondary);
+    font-weight: 700;
+    color: white;
+    letter-spacing: 1.5px;
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    text-shadow: 0px 0px 8px rgba(255, 255, 255, 0.3);
+    z-index: -1;
+  }
+
+/* Logo styling */
+.remlabs-logo-img {
+    filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.5));
+    transition: transform 0.3s ease;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 4px;
+    max-width: 100%;
+  }
+  
+  .remlabs-logo-container {
+    display: block;
+    text-align: left;
+    margin-top: 10px;
+    margin-bottom: 12px;
+  }
+  /* Responsive typography */
+  @media (max-width: 768px) {
+    h1, .site-title {
+      font-size: 1.5rem;
+    }
+    
+    h2 {
+      font-size: 1.35rem;
+    }
+    
+    h3, .modal-title {
+      font-size: 1.25rem;
+    }
+    
+    .piece-title, .modal-subtitle {
+      font-size: 1rem;
+    }
+    
+    .site-subtitle {
+      font-size: 0.875rem;
+    }
+  }
