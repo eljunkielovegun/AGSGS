@@ -47,8 +47,8 @@ function App() {
         </div>
       </div>
       
-      {/* Ultra-simple fallback as a last resort */}
-      <div style={{
+      Ultra-simple fallback as a last resort
+      {/* <div style={{
         position: 'fixed',
         top: '16px',
         right: '16px',
@@ -59,8 +59,9 @@ function App() {
         borderRadius: '4px',
         fontSize: '12px'
       }}>
-        {/* REMLABS */}
-      </div>
+      </div> */}
+
+
     </div>
   );
 }
