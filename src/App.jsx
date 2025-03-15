@@ -60,45 +60,91 @@ function App() {
       
       {/* Top-aligned title overlay */}
       <div className="title-overlay" style={{ zIndex: 900 }}>
-        <div className="flex items-center">
-          <div style={{marginLeft: '1.5em'}}>
-            <h1 className="site-title" style={{marginBottom: '0px'}}> Summit for Adventurous Electric Guitar In the Gulf South</h1>
-            <p className="site-subtitle" style={{marginTop: '0'}}>REMLABS, March 6, 2025
-            </p>
+        {!isMobile && (
+          <div className="flex items-center">
+            <div style={{marginLeft: '1.5em'}}>
+              <h1 className="site-title" style={{marginBottom: '0px'}}> Summit for Adventurous Electric Guitar In the Gulf South</h1>
+              <p className="site-subtitle" style={{marginTop: '0'}}>REMLABS, March 6, 2025
+              </p>
+            </div>
+            <div className="ml-4">
+              <img 
+                src="/REMLABS-Guitar.png" 
+                alt="REMLABS Guitar" 
+                style={{ 
+                  marginTop: '1em',
+                  height: '150px', 
+                  filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.7))'
+                }}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/images/REMLABS-Guitar.png";
+                  e.target.onerror = () => e.target.style.display = 'none';
+                }}
+              />
+            </div>
           </div>
-          <div className="ml-4">
+        )}
+        
+        {/* Mobile header with just the logo */}
+        {isMobile && (
+          <div style={{
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '15px 0'
+          }}>
             <img 
               src="/REMLABS-Guitar.png" 
               alt="REMLABS Guitar" 
               style={{ 
-                marginTop: '1em',
-                height: '150px', 
+                width: '60%',
+                objectFit: 'contain',
                 filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.7))'
               }}
               onError={(e) => {
-                console.log("Primary image path failed, trying alternative");
                 e.target.onerror = null;
                 e.target.src = "/images/REMLABS-Guitar.png";
-                
-                // Final fallback
-                e.target.onerror = () => {
-                  console.log("All image paths failed");
-                  e.target.style.display = 'none';
-                };
+                e.target.onerror = () => e.target.style.display = 'none';
               }}
             />
-          </div>
-        </div>
         
+         
+          </div>
+ 
+        )
+    
+        }
+          {isMobile && (
+              <div style={{
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'center',
+                paddingRight: '10px',
+                marginBottom: '5px'
+              }}>
+                <p className="site-subtitle" style={{
+                  margin: '0',
+                  color: 'yellow',
+                  fontSize: '10px',
+                  fontWeight: 'bold',
+                  textShadow: '0 0 4px rgba(0,0,0,0.8)'
+                }}>
+                →  REMLABS, Sheperd School of Music, Houston, TX,  March 6, 2025 ← <span style={{marginLeft: '4px', fontWeight: 'bold'}}></span>
+                </p>
+              </div>
+            )}
+
         {/* Mobile performer list using our React component */}
         {isMobile && (
           <div style={{ 
             width: '100%', 
             display: 'flex', 
             justifyContent: 'center',
-            marginTop: '15px'
+            marginTop: '0'
           }}>
-            <Suspense fallback={<div style={{color: 'white', textAlign: 'center'}}>Loading...</div>}>
+
+            <Suspense fallback={<div>Loading performer list...</div>}>
               <MobilePerformerList performers={performerData} />
             </Suspense>
           </div>
