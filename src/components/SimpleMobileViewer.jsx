@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 
-const InPlaceMediaMobile = ({ 
+const SimpleMobileViewer = ({ 
   media, 
   onClose, 
   performer 
@@ -30,30 +30,42 @@ const InPlaceMediaMobile = ({
   
   // Touch handlers
   const handleTouchStart = (e) => {
+    console.log("Touch start detected");
     setTouchStart(e.touches[0].clientX);
   };
   
+  const handleTouchMove = (e) => {
+    // Prevent default to avoid scrolling while swiping
+    e.preventDefault();
+  };
+  
   const handleTouchEnd = (e) => {
+    console.log("Touch end detected", touchStart);
     if (!touchStart) return;
     
     setTouchEnd(e.changedTouches[0].clientX);
     
     const distance = touchStart - touchEnd;
+    console.log("Swipe distance:", distance);
     const isSwipe = Math.abs(distance) > 50;
     
     if (isSwipe) {
       if (distance > 0 && performer?.media && currentMediaIndex < performer.media.length - 1) {
         // Left swipe - next
+        console.log("Swiping to next media");
         setCurrentMediaIndex(prev => prev + 1);
       } else if (distance < 0 && currentMediaIndex > 0) {
         // Right swipe - previous
+        console.log("Swiping to previous media");
         setCurrentMediaIndex(prev => prev - 1);
       } else {
         // Edge case - close
+        console.log("Edge swipe - closing");
         onClose();
       }
     } else {
       // Small movement - close
+      console.log("Small movement - closing");
       onClose();
     }
   };
@@ -62,7 +74,10 @@ const InPlaceMediaMobile = ({
     setIsLoading(false);
   };
   
-  // Extremely minimal UI
+  // Log current media on render
+  console.log("SimpleMobileViewer rendering with media:", currentMedia);
+  
+  // Extremely minimal UI - no chrome, just the media
   return (
     <div 
       style={{
@@ -76,10 +91,13 @@ const InPlaceMediaMobile = ({
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 9999,
-        touchAction: 'none'
+        touchAction: 'none',
+        animation: 'fadeIn 0.2s ease-in'
       }}
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onClick={onClose}
     >
       {currentMedia.type === 'image' ? (
         <img
@@ -91,6 +109,10 @@ const InPlaceMediaMobile = ({
             objectFit: 'contain'
           }}
           onLoad={handleLoad}
+          onClick={(e) => {
+            e.stopPropagation();
+            // Don't close, allow swipe only
+          }}
         />
       ) : (
         <video
@@ -104,6 +126,10 @@ const InPlaceMediaMobile = ({
             objectFit: 'contain'
           }}
           onLoadedData={handleLoad}
+          onClick={(e) => {
+            e.stopPropagation();
+            // Don't close, allow controls to work
+          }}
         >
           <source src={currentMedia.src} type="video/mp4" />
         </video>
@@ -130,4 +156,4 @@ const InPlaceMediaMobile = ({
   );
 };
 
-export default InPlaceMediaMobile;
+export default SimpleMobileViewer;
