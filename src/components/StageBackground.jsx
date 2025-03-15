@@ -57,7 +57,8 @@ const StageBackground = ({ children }) => {
         height: '100vh',
         position: 'fixed',
         top: 0,
-        left: 0
+        left: 0,
+        zIndex: 1 // Ensure this is behind other elements
       }}
     >
       <img 
@@ -70,7 +71,8 @@ const StageBackground = ({ children }) => {
           width: '100%',
           height: '100%',
           objectFit: 'cover',
-          objectPosition: getObjectPosition()
+          objectPosition: getObjectPosition(),
+          zIndex: 1
         }}
         onError={(e) => {
           console.log("Background image failed to load, trying fallback");

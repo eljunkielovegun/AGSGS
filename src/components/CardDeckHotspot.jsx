@@ -199,8 +199,18 @@ const CardDeckHotspot = ({ performer }) => {
   // Mobile-specific tap handler
   const handleTap = () => {
     if (isMobile) {
-      // On mobile, just open the first media item directly
-      const mediaItem = performerMedia[0];
+      // On mobile, look for videos first, then fallback to images
+      let mediaItem;
+      
+      // Try to find a video first
+      const videoItem = performerMedia.find(item => item.type === 'video');
+      
+      if (videoItem) {
+        mediaItem = videoItem;
+      } else {
+        // If no video, use the first item (likely an image)
+        mediaItem = performerMedia[0];
+      }
       
       // Get position for the modal animation - use the container for mobile
       const element = document.getElementById(`card-deck-${performer.id}`);
@@ -297,7 +307,7 @@ const CardDeckHotspot = ({ performer }) => {
     top: isMobile ? '-60px' : '-40px',
     left: isMobile ? '10px' : '40px',
     transform: isMobile ?  'translate(-25%, 50% )' : 'translateX(-25%)', 
-    backgroundColor: isMobile ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0)',
+    backgroundColor: isMobile ? 'rgba(0, 0, 0, 0)' : 'rgba(0, 0, 0, 0)',
     color: 'white',
     padding: isMobile ? '8px 12px' : '4px 8px',
     borderRadius: '4px',
@@ -309,8 +319,8 @@ const CardDeckHotspot = ({ performer }) => {
     cursor: isMobile ? 'pointer' : 'default',
     opacity: modalOpen ? 0 : 1,
     transition: 'opacity 0.3s ease-out',
-    border: isMobile ? `1px solid ${color}` : 'none', // Add colored border on mobile
-    boxShadow: isMobile ? '0 2px 4px rgba(0,0,0,0.3)' : 'none' // Add shadow on mobile
+    border: isMobile ? 'none' : 'none', // Add colored border on mobile
+    boxShadow: isMobile ? 'none' : 'none' // Add shadow on mobile
   };
 
   // We're removing the mobile-specific button style as we won't be using it

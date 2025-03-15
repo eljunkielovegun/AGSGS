@@ -568,7 +568,6 @@ const InPlaceMediaMobile = ({
             ) : (
               <video 
                 ref={videoRef}
-                src={currentMedia.src}
                 preload="auto" 
                 playsInline={true}
                 muted={false}
@@ -579,14 +578,22 @@ const InPlaceMediaMobile = ({
                   width: '100%',
                   height: '100%',
                   objectFit: 'contain',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  backgroundColor: '#000'
                 }}
                 onLoadedData={handleMediaLoaded}
                 onError={handleMediaError}
                 onPlay={() => setIsPlaying(true)}
                 onPause={() => setIsPlaying(false)}
                 onEnded={() => setIsPlaying(false)}
-              />
+              >
+                <source src={currentMedia.src} type="video/mp4" />
+                <source src={currentMedia.src.replace('.mp4', '.mov')} type="video/quicktime" />
+                <source src={currentMedia.src.replace('.mov', '.mp4')} type="video/mp4" />
+                <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
+                  Your browser doesn't support HTML5 video.
+                </p>
+              </video>
             )}
             
             {/* Play/pause button overlay for videos - only show when controls are visible */}

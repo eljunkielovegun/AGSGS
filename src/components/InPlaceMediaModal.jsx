@@ -368,6 +368,42 @@ const InPlaceMediaModal = ({
     
     setContentDimensions({ width, height });
     setIsLoading(false);
+    
+    // For videos, try to play automatically if it's loaded
+    if (target.tagName === 'VIDEO' && currentMedia.type === 'video') {
+      // Small timeout to ensure everything is ready
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.play()
+            .then(() => setIsPlaying(true))
+            .catch(err => {
+              console.error("Error auto-playing video:", err);
+              // Don't set error state, as the video may still be manually playable
+            });
+        }
+      }, 100);
+    }
+  };
+  
+  // Add a media error handler
+  const handleMediaError = (e) => {
+    console.error("Error loading media:", e);
+    // Show error state but keep loading spinner hidden
+    setIsLoading(false);
+    
+    // If possible, try to recover by changing the video source format or falling back to an image
+    if (performer && performer.media) {
+      // Look for an alternative media item (possibly an image instead of video)
+      const alternativeMedia = performer.media.find(item => 
+        item.type === 'image' && item !== currentMedia
+      );
+      
+      if (alternativeMedia) {
+        console.log("Falling back to alternative media:", alternativeMedia.src);
+        // Set the alternative media
+        setCurrentMediaIndex(performer.media.indexOf(alternativeMedia));
+      }
+    }
   };
 
 // State for vertical swipe handling
@@ -533,19 +569,28 @@ const handleTouchEnd = (e) => {
           <>
             <video 
               ref={videoRef}
-              src={currentMedia.src} 
               playsInline // Important for mobile
+              preload="auto"
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'contain',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                backgroundColor: '#000'
               }}
               onLoadedData={handleMediaLoaded}
+              onError={handleMediaError}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onEnded={() => setIsPlaying(false)}
-            />
+            >
+              <source src={currentMedia.src} type="video/mp4" />
+              <source src={currentMedia.src.replace('.mp4', '.mov')} type="video/quicktime" />
+              <source src={currentMedia.src.replace('.mov', '.mp4')} type="video/mp4" />
+              <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
+                Your browser doesn't support HTML5 video.
+              </p>
+            </video>
             {/* Play/pause button overlay for videos - only show when controls are visible */}
             {(showControls || !isPlaying) && (
               <div 
