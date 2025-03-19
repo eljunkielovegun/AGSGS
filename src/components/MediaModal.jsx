@@ -76,15 +76,23 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
             />
           ) : (
             <video 
-              src={media.src} 
               controls 
+              playsInline
               autoPlay 
               className="max-w-full max-h-full"
               onLoadedData={handleMediaLoaded}
               style={{ opacity: isLoading ? 0.5 : 1 }}
               // Preload metadata only, load full video when played
               preload="metadata"
-            />
+            >
+              {media.src.endsWith('.mp4') ? (
+                <source src={media.src} type="video/mp4" />
+              ) : media.src.endsWith('.mov') ? (
+                <source src={media.src} type="video/quicktime" />
+              ) : (
+                <source src={media.src} />
+              )}
+            </video>
           )}
         </motion.div>
       </motion.div>

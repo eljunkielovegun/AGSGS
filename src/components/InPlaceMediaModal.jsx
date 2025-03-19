@@ -570,7 +570,7 @@ const handleTouchEnd = (e) => {
             <video 
               ref={videoRef}
               playsInline // Important for mobile
-              preload="auto"
+              preload="metadata"
               style={{
                 width: '100%',
                 height: '100%',
@@ -584,9 +584,17 @@ const handleTouchEnd = (e) => {
               onPause={() => setIsPlaying(false)}
               onEnded={() => setIsPlaying(false)}
             >
-              <source src={currentMedia.src} type="video/mp4" />
-              <source src={currentMedia.src.replace('.mp4', '.mov')} type="video/quicktime" />
-              <source src={currentMedia.src.replace('.mov', '.mp4')} type="video/mp4" />
+              {currentMedia.src.endsWith('.mp4') ? (
+                <source src={currentMedia.src} type="video/mp4" />
+              ) : currentMedia.src.endsWith('.mov') ? (
+                <source src={currentMedia.src} type="video/quicktime" />
+              ) : (
+                <>
+                  <source src={currentMedia.src} type="video/mp4" />
+                  <source src={currentMedia.src.replace('.mp4', '.mov')} type="video/quicktime" />
+                  <source src={currentMedia.src.replace('.mov', '.mp4')} type="video/mp4" />
+                </>
+              )}
               <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
                 Your browser doesn't support HTML5 video.
               </p>

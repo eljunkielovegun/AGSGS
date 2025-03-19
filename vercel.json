@@ -8,6 +8,20 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/images/performers/(.*)\\.mp4$",
+      "headers": {
+        "Content-Type": "video/mp4"
+      },
+      "dest": "/images/performers/$1.mp4"
+    },
+    {
+      "src": "/images/performers/(.*)\\.mov$",
+      "headers": {
+        "Content-Type": "video/quicktime"
+      },
+      "dest": "/images/performers/$1.mov"
+    },
+    {
       "src": "/images/(.*)",
       "dest": "/images/$1"
     },
