@@ -130,9 +130,55 @@ const InPlaceMediaModal = ({
   const togglePlayPause = () => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        videoRef.current.play()
-          .then(() => setIsPlaying(true))
-          .catch(err => console.error("Error playing video:", err));
+        // Force load the video if needed
+        if (videoRef.current.networkState === HTMLMediaElement.NETWORK_NO_SOURCE ||
+            videoRef.current.networkState === HTMLMediaElement.NETWORK_EMPTY) {
+          videoRef.current.load();
+        }
+        
+        console.log("Attempting to play video:", currentMedia.src);
+        
+        // Add a visible spinner while trying to play
+        const spinnerEl = document.createElement('div');
+        spinnerEl.className = 'video-loading-spinner';
+        spinnerEl.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:50px; height:50px; border:5px solid rgba(255,255,255,0.3); border-radius:50%; border-top-color:white; animation:spin 1s linear infinite;';
+        
+        // Add keyframes for spinner animation
+        if (!document.querySelector('#spinner-animation')) {
+          const styleEl = document.createElement('style');
+          styleEl.id = 'spinner-animation';
+          styleEl.textContent = '@keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }';
+          document.head.appendChild(styleEl);
+        }
+        
+        videoRef.current.parentNode.appendChild(spinnerEl);
+        
+        // Attempt to play with timeout and retry
+        const playPromise = videoRef.current.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log("Video playback started successfully");
+              // Remove spinner
+              if (spinnerEl.parentNode) {
+                spinnerEl.parentNode.removeChild(spinnerEl);
+              }
+              setIsPlaying(true);
+            })
+            .catch(err => {
+              console.error("Error playing video:", err, "for source:", currentMedia.src);
+              // Remove spinner
+              if (spinnerEl.parentNode) {
+                spinnerEl.parentNode.removeChild(spinnerEl);
+              }
+              
+              // If autoplay was blocked, show a message
+              if (err.name === 'NotAllowedError') {
+                alert("Autoplay was blocked by your browser. Please try clicking the play button again.");
+              }
+            });
+        }
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -562,8 +608,9 @@ const handleTouchEnd = (e) => {
             <video 
               ref={videoRef}
               playsInline
-              controls // Add native controls for better compatibility
-              preload="none" // Only load on user interaction
+              controls
+              poster={currentMedia.poster || ''}
+              preload="auto"
               style={{
                 width: '100%',
                 height: '100%',
@@ -576,12 +623,15 @@ const handleTouchEnd = (e) => {
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onEnded={() => setIsPlaying(false)}
+              crossOrigin="anonymous"
+              loop={false}
+              muted={false}
             >
-              {/* Simplified source handling for better compatibility */}
+              {/* Direct src for better compatibility */}
               <source 
                 src={currentMedia.src} 
-                type={currentMedia.src.endsWith('.mp4') ? 'video/mp4' : 
-                     currentMedia.src.endsWith('.mov') ? 'video/quicktime' : ''}
+                type={currentMedia.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 
+                     currentMedia.src.toLowerCase().endsWith('.mov') ? 'video/quicktime' : ''}
               />
               <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
                 Your browser doesn't support HTML5 video. Please try another browser.

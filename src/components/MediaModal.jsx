@@ -82,14 +82,14 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
               onLoadedData={handleMediaLoaded}
               onError={(e) => console.error("Video error:", e)}
               style={{ opacity: isLoading ? 0.5 : 1 }}
-              // Don't preload automatically - wait for user interaction
-              preload="none"
+              preload="auto"
+              crossOrigin="anonymous"
             >
-              {/* Single source with proper type */}
+              {/* Direct source for better compatibility */}
               <source 
                 src={media.src} 
-                type={media.src.endsWith('.mp4') ? 'video/mp4' : 
-                     media.src.endsWith('.mov') ? 'video/quicktime' : ''}
+                type={media.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 
+                     media.src.toLowerCase().endsWith('.mov') ? 'video/quicktime' : ''}
               />
               <div style={{color: 'white', padding: '20px', textAlign: 'center'}}>
                 Click to play video

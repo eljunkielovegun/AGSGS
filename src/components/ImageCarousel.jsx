@@ -146,17 +146,30 @@ const ImageCarousel = ({ media, performerName, performerInstrument, performerPie
                 ) : item.type === 'video' ? (
                   <div className="relative h-full w-full flex items-center justify-center">
                     <div className="video-thumbnail" style={{ position: 'relative', height: '100%', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {/* Video thumbnail (first frame) */}
-                      <video 
-                        src={item.src} 
-                        muted 
-                        playsInline
-                        style={{ 
-                          maxHeight: '100%', 
-                          maxWidth: '100%', 
-                          objectFit: 'contain'
-                        }}
-                      />
+                      {/* Video thumbnail (using poster image) */}
+                      {item.poster ? (
+                        <img 
+                          src={item.poster}
+                          alt={item.alt || "Video thumbnail"}
+                          style={{ 
+                            maxHeight: '100%', 
+                            maxWidth: '100%', 
+                            objectFit: 'contain'
+                          }}
+                        />
+                      ) : (
+                        <video 
+                          src={item.src} 
+                          poster={item.poster}
+                          muted 
+                          playsInline
+                          style={{ 
+                            maxHeight: '100%', 
+                            maxWidth: '100%', 
+                            objectFit: 'contain'
+                          }}
+                        />
+                      )}
                       
                       {/* Play button overlay */}
                       <div style={{ 
