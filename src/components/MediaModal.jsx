@@ -35,16 +35,34 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
     setIsLoading(false);
   };
   
-  // Toggle play/pause for videos
+  // Toggle play/pause for videos with improved error handling
   const togglePlayPause = () => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        videoRef.current.play()
-          .then(() => setIsPlaying(true))
-          .catch(err => console.error("Error playing video:", err));
+        // Make sure video is fully loaded before playing
+        const playVideo = () => {
+          // Make sure the element is still in the DOM
+          if (videoRef.current && document.contains(videoRef.current)) {
+            videoRef.current.play()
+              .then(() => setIsPlaying(true))
+              .catch(err => {
+                console.error("Error playing video:", err);
+                // If there's an abort error, wait and try again
+                if (err.name === 'AbortError') {
+                  console.log("Retrying playback after abort...");
+                  setTimeout(playVideo, 500); // Retry after 500ms
+                }
+              });
+          }
+        };
+        
+        // Short delay to ensure DOM is ready before playing
+        setTimeout(playVideo, 100);
       } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
+        if (videoRef.current) {
+          videoRef.current.pause();
+          setIsPlaying(false);
+        }
       }
     }
   };
@@ -94,21 +112,48 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
               loading="lazy"
             />
           ) : (
-            <video 
-              ref={videoRef}
-              controls 
-              playsInline
-              className="max-w-full max-h-full"
-              onLoadedData={handleMediaLoaded}
-              onError={(e) => console.error("Video error:", e)}
-              style={{ opacity: isLoading ? 0.5 : 1 }}
-              poster={media.poster || ''}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
-              onEnded={() => setIsPlaying(false)}
-            >
-              <source src={media.src} type={media.src.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} />
-            </video>
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              <video 
+                ref={videoRef}
+                controls 
+                playsInline
+                className="max-w-full max-h-full"
+                onLoadedData={handleMediaLoaded}
+                onError={(e) => {
+                  console.error("Video error:", e);
+                  // Prevent default error handling
+                  e.preventDefault();
+                }}
+                style={{ opacity: isLoading ? 0.5 : 1 }}
+                poster={media.poster || ''}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+                preload="auto"
+              >
+                <source 
+                  src={`${media.src}?v=${new Date().getTime()}`} 
+                  type={media.src.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} 
+                />
+              </video>
+              
+              {/* Loading message if needed */}
+              {isLoading && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  backgroundColor: 'rgba(0,0,0,0.7)',
+                  color: 'white',
+                  padding: '15px',
+                  borderRadius: '4px',
+                  textAlign: 'center'
+                }}>
+                  <p>Loading video...</p>
+                </div>
+              )}
+            </div>
           )}
         </motion.div>
       </motion.div>
