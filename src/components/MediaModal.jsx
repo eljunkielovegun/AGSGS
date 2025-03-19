@@ -1,14 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MediaModal = ({ media, onClose, performerName, performerPiece, performerInstrument }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [videoPreloaded, setVideoPreloaded] = useState(false);
+  const videoRef = useRef(null);
+  
+  // Preload video when component mounts
+  const preloadVideo = useCallback(() => {
+    if (media.type === 'video' && !videoPreloaded) {
+      // Create a preload link
+      const preloadLink = document.createElement('link');
+      preloadLink.rel = 'preload';
+      preloadLink.as = 'video';
+      preloadLink.href = media.src;
+      document.head.appendChild(preloadLink);
+      
+      // Create a hidden video element to preload the video
+      const hiddenVideo = document.createElement('video');
+      hiddenVideo.preload = 'auto';
+      hiddenVideo.src = media.src;
+      hiddenVideo.style.display = 'none';
+      hiddenVideo.muted = true;
+      hiddenVideo.onloadeddata = () => {
+        console.log('Video preloaded:', media.src);
+        setVideoPreloaded(true);
+        document.body.removeChild(hiddenVideo);
+      };
+      document.body.appendChild(hiddenVideo);
+    }
+  }, [media, videoPreloaded]);
+  
+  // Attempt to preload the video
+  useEffect(() => {
+    if (media.type === 'video') {
+      preloadVideo();
+    }
+  }, [media, preloadVideo]);
   
   // Close modal when Escape key is pressed
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose();
+      } else if (e.key === ' ' && media.type === 'video') {
+        // Space bar toggles play/pause for videos
+        e.preventDefault();
+        togglePlayPause();
       }
     };
 
@@ -22,11 +61,39 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
       // Restore body scroll
       document.body.style.overflow = 'auto';
     };
-  }, [onClose]);
+  }, [onClose, media.type]);
 
   // Handle media load completion
   const handleMediaLoaded = () => {
     setIsLoading(false);
+  };
+  
+  // Toggle play/pause for videos
+  const togglePlayPause = () => {
+    if (!videoRef.current) return;
+    
+    try {
+      if (videoRef.current.paused) {
+        const playPromise = videoRef.current.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch(err => {
+              console.error("Error playing video:", err);
+              // Show error message instead of attempting autoplay
+              setIsPlaying(false);
+            });
+        }
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    } catch (error) {
+      console.error("Exception in togglePlayPause:", error);
+    }
   };
 
   return (
@@ -75,41 +142,54 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
             />
           ) : (
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              {/* Use iframe for more reliable video playback */}
-              <iframe
-                src={`https://player.cloudinary.com/embed/?cloud_name=demo&public_id=${media.src.split('/').pop().split('.')[0]}&fluid=true&controls=true&source[source_types][0]=mp4`}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                  backgroundColor: '#000'
-                }}
-                allow="autoplay; fullscreen"
-                allowFullScreen
-                onLoad={handleMediaLoaded}
-              ></iframe>
-              
-              {/* Direct video link */}
-              <a 
-                href={media.src} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={{
-                  position: 'absolute',
-                  bottom: '10px',
-                  right: '10px',
-                  backgroundColor: 'rgba(0,0,0,0.7)',
-                  color: 'white',
-                  padding: '5px 10px',
-                  fontSize: '12px',
-                  borderRadius: '4px',
-                  textDecoration: 'none',
-                  zIndex: 100
-                }}
-                onClick={e => e.stopPropagation()}
+              <video 
+                ref={videoRef}
+                className="max-w-full max-h-full"
+                onLoadedData={handleMediaLoaded}
+                onError={(e) => console.error("Video error:", e)}
+                style={{ opacity: isLoading ? 0.5 : 1 }}
+                poster={media.poster}
+                playsInline
+                preload="auto"
+                loop={false}
+                muted={false}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
               >
-                Direct Link
-              </a>
+                <source 
+                  src={`${media.src}?cache=${new Date().getTime()}`} 
+                  type={media.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'}
+                />
+              </video>
+              
+              {/* Play button for videos */}
+              {!isPlaying && (
+                <div 
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: '60px',
+                    height: '60px',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer'
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePlayPause();
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="white" width="24" height="24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              )}
             </div>
           )}
         </motion.div>

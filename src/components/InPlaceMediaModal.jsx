@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 
 const InPlaceMediaModal = ({ 
   media, 
@@ -10,14 +10,17 @@ const InPlaceMediaModal = ({
   performer 
 }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [contentDimensions, setContentDimensions] = useState({ width: 0, height: 0 });
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
   const [swipeStartX, setSwipeStartX] = useState(null);
   const [showControls, setShowControls] = useState(true);
+  const [videoPreloaded, setVideoPreloaded] = useState(false);
   
   const backdropRef = useRef(null);
+  const videoRef = useRef(null);
   const controlsTimerRef = useRef(null);
   
   // Check device and orientation
@@ -55,6 +58,43 @@ const InPlaceMediaModal = ({
     ? performer.media[currentMediaIndex]
     : media;
   
+  // Reset playing state when media changes
+  useEffect(() => {
+    setIsPlaying(false);
+    setVideoPreloaded(false);
+  }, [currentMediaIndex, currentMedia]);
+  
+  // Preload videos when they become the current media
+  const preloadVideo = useCallback(() => {
+    if (currentMedia.type === 'video' && !videoPreloaded) {
+      const preloadLink = document.createElement('link');
+      preloadLink.rel = 'preload';
+      preloadLink.as = 'video';
+      preloadLink.href = currentMedia.src;
+      document.head.appendChild(preloadLink);
+      
+      // Create a hidden video element to preload the video
+      const hiddenVideo = document.createElement('video');
+      hiddenVideo.preload = 'auto';
+      hiddenVideo.src = currentMedia.src;
+      hiddenVideo.style.display = 'none';
+      hiddenVideo.muted = true;
+      hiddenVideo.onloadeddata = () => {
+        console.log('Video preloaded:', currentMedia.src);
+        setVideoPreloaded(true);
+        document.body.removeChild(hiddenVideo);
+      };
+      document.body.appendChild(hiddenVideo);
+    }
+  }, [currentMedia, videoPreloaded]);
+  
+  // Preload the video when component mounts
+  useEffect(() => {
+    if (currentMedia.type === 'video') {
+      preloadVideo();
+    }
+  }, [currentMedia, preloadVideo]);
+  
   // Handle key presses
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -64,6 +104,10 @@ const InPlaceMediaModal = ({
         nextMedia();
       } else if (e.key === 'ArrowLeft' && performer && performer.media) {
         prevMedia();
+      } else if (e.key === ' ' && currentMedia.type === 'video') {
+        // Space bar toggles play/pause for videos
+        e.preventDefault();
+        togglePlayPause();
       }
     };
 
@@ -74,7 +118,31 @@ const InPlaceMediaModal = ({
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'auto';
     };
-  }, [onClose, performer]);
+  }, [onClose, performer, currentMedia.type]);
+  
+  // Handle controls auto-hide timer
+  useEffect(() => {
+    if (isPlaying) {
+      // Start timer to hide controls
+      resetControlsTimer();
+    } else {
+      // Show controls when paused
+      setShowControls(true);
+      clearTimeout(controlsTimerRef.current);
+    }
+    
+    return () => clearTimeout(controlsTimerRef.current);
+  }, [isPlaying]);
+  
+  // Reset the controls auto-hide timer
+  const resetControlsTimer = () => {
+    clearTimeout(controlsTimerRef.current);
+    setShowControls(true);
+    
+    controlsTimerRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 3000); // Hide controls after 3 seconds
+  };
   
   // Navigation functions
   const nextMedia = () => {
@@ -88,6 +156,34 @@ const InPlaceMediaModal = ({
     if (performer && performer.media && performer.media.length > 1) {
       setCurrentMediaIndex((prev) => 
         prev > 0 ? prev - 1 : performer.media.length - 1);
+    }
+  };
+  
+  // Toggle play/pause for videos - with defensive programming
+  const togglePlayPause = () => {
+    if (!videoRef.current) return;
+    
+    try {
+      if (videoRef.current.paused) {
+        const playPromise = videoRef.current.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              setIsPlaying(true);
+            })
+            .catch(err => {
+              console.error("Error playing video:", err);
+              // Show error message instead of attempting autoplay
+              setIsPlaying(false);
+            });
+        }
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    } catch (error) {
+      console.error("Exception in togglePlayPause:", error);
     }
   };
   
@@ -272,7 +368,7 @@ const InPlaceMediaModal = ({
           height: 16px;
         }
       }
-
+      
       /* Animation for spinner */
       @keyframes spin {
         0% { transform: translate(-50%, -50%) rotate(0deg); }
@@ -290,8 +386,8 @@ const InPlaceMediaModal = ({
   // Handle media load completion with consistent height sizing
   const handleMediaLoaded = (e) => {
     const target = e.target;
-    const naturalWidth = target.naturalWidth || 640;
-    const naturalHeight = target.naturalHeight || 360;
+    const naturalWidth = target.naturalWidth || target.videoWidth || 640;
+    const naturalHeight = target.naturalHeight || target.videoHeight || 360;
     
     // Calculate dimensions
     const viewportHeight = window.innerHeight;
@@ -326,6 +422,12 @@ const InPlaceMediaModal = ({
     setContentDimensions({ width, height });
     setIsLoading(false);
   };
+  
+  // Media error handler - now just logs the error but doesn't try to auto-navigate
+  const handleMediaError = (e) => {
+    console.error("Error loading media:", e);
+    setIsLoading(false);
+  };
 
 // State for vertical swipe handling
 const [swipeStartY, setSwipeStartY] = useState(null);
@@ -335,6 +437,7 @@ const handleTouchStart = (e) => {
   if (isMobile) {
     setSwipeStartX(e.touches[0].clientX);
     setSwipeStartY(e.touches[0].clientY);
+    resetControlsTimer();
   }
 };
 
@@ -377,13 +480,22 @@ const handleTouchEnd = (e) => {
   
   // Event handlers
   const handleClick = (e) => {
+    // Reset controls timer on any click
+    resetControlsTimer();
+    
     // Handle clicks on the content
-    if (e.target.tagName === 'IMG' && 
+    if ((e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') && 
         !e.target.closest('.play-button') && !e.target.closest('.nav-button') && !e.target.closest('.close-button')) {
       e.stopPropagation();
       
-      if (currentMedia.type === 'image') {
-        // For images, go to next media
+      // Toggle controls visibility on content tap for mobile
+      if (isMobile) {
+        setShowControls(!showControls);
+      } else if (currentMedia.type === 'video') {
+        // For desktop, toggle play/pause on video click
+        togglePlayPause();
+      } else {
+        // For images on desktop, go to next media
         nextMedia();
       }
     }
@@ -393,6 +505,13 @@ const handleTouchEnd = (e) => {
     }
   };
   
+  // Handle play button click
+  const handlePlayClick = (e) => {
+    e.stopPropagation(); // Prevent navigation
+    togglePlayPause();
+    resetControlsTimer();
+  };
+
   return (
     <div 
       className="modal-backdrop" 
@@ -430,8 +549,11 @@ const handleTouchEnd = (e) => {
         </svg>
       </div>
       
-      {/* Performer info at top */}
-      <div className="modal-info">
+      {/* Performer info at top - collapsible on mobile */}
+      <div className="modal-info" style={{
+        opacity: showControls || !isPlaying ? 1 : 0,
+        pointerEvents: showControls || !isPlaying ? 'auto' : 'none'
+      }}>
         <h2>{performerName}</h2>
         <h3>"{performerPiece}"</h3>
         <p>{performerInstrument}</p>
@@ -439,7 +561,7 @@ const handleTouchEnd = (e) => {
         {performer && performer.media && performer.media.length > 1 && (
           <p className="counter">
             {currentMediaIndex + 1} / {performer.media.length}
-            {!isMobile && ` • ${currentMedia.type === 'image' ? 'Click image for next' : 'Use video controls'} • Click outside to close`}
+            {!isMobile && ` • ${currentMedia.type === 'image' ? 'Click image for next' : 'Space to play/pause'} • Click outside to close`}
             {isMobile && ` • Swipe to navigate`}
           </p>
         )}
@@ -467,53 +589,109 @@ const handleTouchEnd = (e) => {
             onLoad={handleMediaLoaded}
           />
         ) : (
-          <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-            {/* For videos, use iframe to YouTube embed */}
-            <iframe
-              src={`https://player.cloudinary.com/embed/?cloud_name=demo&public_id=${currentMedia.src.split('/').pop().split('.')[0]}&fluid=true&controls=true&source[source_types][0]=mp4`}
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-                backgroundColor: '#000'
-              }}
-              allow="autoplay; fullscreen"
-              allowFullScreen
-            ></iframe>
-            
-            {/* Direct video link button */}
-            <a 
-              href={currentMedia.src} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{
+          <>
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              <video 
+                ref={videoRef}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  cursor: 'pointer',
+                  backgroundColor: '#000'
+                }}
+                poster={currentMedia.poster}
+                onLoadedData={handleMediaLoaded}
+                onError={handleMediaError}
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
+                onEnded={() => setIsPlaying(false)}
+                playsInline
+                preload="auto"
+                loop={false}
+                muted={false}
+                crossOrigin="anonymous"
+              >
+                <source 
+                  src={`${currentMedia.src}?cache=${new Date().getTime()}`} 
+                  type={currentMedia.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} 
+                />
+                <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
+                  Your browser doesn't support HTML5 video.
+                </p>
+              </video>
+              
+              {/* Custom controls instead of native controls */}
+              <div style={{
                 position: 'absolute',
                 bottom: '10px',
+                left: '10px',
                 right: '10px',
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                color: 'white',
-                padding: '5px 10px',
-                fontSize: '12px',
+                padding: '5px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'rgba(0,0,0,0.5)',
                 borderRadius: '4px',
-                textDecoration: 'none',
-                zIndex: 100
-              }}
-              onClick={e => e.stopPropagation()}
-            >
-              Direct Link
-            </a>
-          </div>
+                opacity: showControls ? 1 : 0,
+                transition: 'opacity 0.3s ease',
+                pointerEvents: showControls ? 'auto' : 'none'
+              }}>
+                <button 
+                  onClick={togglePlayPause}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'white',
+                    cursor: 'pointer',
+                    padding: '5px 10px'
+                  }}
+                >
+                  {isPlaying ? 'Pause' : 'Play'}
+                </button>
+              </div>
+            </div>
+            
+            {/* Play/pause button overlay for videos - only show when not playing */}
+            {!isPlaying && (
+              <div 
+                className="play-button"
+                onClick={handlePlayClick}
+              >
+                <svg viewBox="0 0 24 24" fill="white">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            )}
+          </>
         )}
       </div>
       
       {/* Bottom controls for navigation - only show when multiple media items */}
       {performer && performer.media && performer.media.length > 1 && (
-        <div className="controls-container">
+        <div className="controls-container" style={{
+          opacity: showControls || !isPlaying ? 1 : 0,
+          pointerEvents: showControls || !isPlaying ? 'auto' : 'none'
+        }}>
           <div className="nav-button" onClick={(e) => { e.stopPropagation(); prevMedia(); }}>
             <svg viewBox="0 0 24 24" fill="white">
               <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
             </svg>
           </div>
+          
+          {currentMedia.type === 'video' && (
+            <div className="nav-button" onClick={(e) => { e.stopPropagation(); togglePlayPause(); }}>
+              {isPlaying ? (
+                <svg viewBox="0 0 24 24" fill="white">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="white">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              )}
+            </div>
+          )}
           
           <div className="nav-button" onClick={(e) => { e.stopPropagation(); nextMedia(); }}>
             <svg viewBox="0 0 24 24" fill="white">
