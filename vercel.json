@@ -1,26 +1,7 @@
 {
   "buildCommand": "npm run build",
-  "public": true,
   "outputDirectory": "dist",
   "framework": "vite",
-  "headers": [
-    {
-      "source": "/images/performers/(.*)\\.mp4",
-      "headers": [
-        { "key": "Content-Type", "value": "video/mp4" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Cache-Control", "value": "public, max-age=604800" }
-      ]
-    },
-    {
-      "source": "/images/performers/(.*)\\.mov",
-      "headers": [
-        { "key": "Content-Type", "value": "video/quicktime" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Cache-Control", "value": "public, max-age=604800" }
-      ]
-    }
-  ],
   "routes": [
     {
       "src": "/assets/(.*)",
@@ -28,10 +9,20 @@
     },
     {
       "src": "/images/performers/(.*)\\.mp4$",
+      "headers": {
+        "Content-Type": "video/mp4",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=604800"
+      },
       "dest": "/images/performers/$1.mp4"
     },
     {
       "src": "/images/performers/(.*)\\.mov$",
+      "headers": {
+        "Content-Type": "video/quicktime",
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=604800"
+      },
       "dest": "/images/performers/$1.mov"
     },
     {
