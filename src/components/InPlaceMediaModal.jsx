@@ -584,7 +584,7 @@ const handleTouchEnd = (e) => {
                      currentMedia.src.endsWith('.mov') ? 'video/quicktime' : ''}
               />
               <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
-                Your browser doesn't support HTML5 video.
+                Your browser doesn't support HTML5 video. Please try another browser.
               </p>
             </video>
             {/* Play/pause button overlay for videos - only show when controls are visible */}
