@@ -1,40 +1,5 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "framework": "vite",
-  "routes": [
-    {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/images/performers/(.*)\\.mp4$",
-      "headers": {
-        "Content-Type": "video/mp4",
-        "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=604800"
-      },
-      "dest": "/images/performers/$1.mp4"
-    },
-    {
-      "src": "/images/performers/(.*)\\.mov$",
-      "headers": {
-        "Content-Type": "video/quicktime",
-        "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "public, max-age=604800"
-      },
-      "dest": "/images/performers/$1.mov"
-    },
-    {
-      "src": "/images/(.*)",
-      "dest": "/images/$1"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
+  "framework": "vite"
 }

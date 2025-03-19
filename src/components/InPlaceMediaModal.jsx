@@ -130,81 +130,9 @@ const InPlaceMediaModal = ({
   const togglePlayPause = () => {
     if (videoRef.current) {
       if (videoRef.current.paused) {
-        // Keep video element in the DOM
-        const videoContainer = videoRef.current.parentNode;
-        videoContainer.style.position = 'relative';
-        
-        console.log("Attempting to play video:", currentMedia.src);
-        
-        // Create a stable media URL for Vercel-hosted content
-        try {
-          // Add a visible spinner while trying to play
-          const spinnerEl = document.createElement('div');
-          spinnerEl.className = 'video-loading-spinner';
-          spinnerEl.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:50px; height:50px; border:5px solid rgba(255,255,255,0.3); border-radius:50%; border-top-color:white; animation:spin 1s linear infinite;';
-          
-          // Add keyframes for spinner animation
-          if (!document.querySelector('#spinner-animation')) {
-            const styleEl = document.createElement('style');
-            styleEl.id = 'spinner-animation';
-            styleEl.textContent = '@keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }';
-            document.head.appendChild(styleEl);
-          }
-          
-          videoContainer.appendChild(spinnerEl);
-          
-          // Create a fetch request to get the video content directly
-          if (!videoRef.current.src || videoRef.current.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
-            // Reload source if needed
-            const originalSrc = currentMedia.src;
-            videoRef.current.src = originalSrc + '?t=' + new Date().getTime(); // Add cache-busting
-            videoRef.current.load();
-          }
-          
-          // Try to play with retry
-          setTimeout(() => {
-            // Attempt to play with timeout and retry
-            const playPromise = videoRef.current.play();
-            
-            if (playPromise !== undefined) {
-              playPromise
-                .then(() => {
-                  console.log("Video playback started successfully");
-                  // Remove spinner
-                  if (spinnerEl.parentNode) {
-                    spinnerEl.parentNode.removeChild(spinnerEl);
-                  }
-                  setIsPlaying(true);
-                })
-                .catch(err => {
-                  console.error("Error playing video:", err, "for source:", currentMedia.src);
-                  // Remove spinner
-                  if (spinnerEl.parentNode) {
-                    spinnerEl.parentNode.removeChild(spinnerEl);
-                  }
-                  
-                  // Try direct fallback link
-                  const fallbackMsg = document.createElement('div');
-                  fallbackMsg.style.cssText = 'position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.7); color:white; padding:10px; border-radius:5px; text-align:center;';
-                  fallbackMsg.innerHTML = 'Click to open video in new tab';
-                  fallbackMsg.onclick = (e) => {
-                    e.stopPropagation();
-                    window.open(currentMedia.src, '_blank');
-                  };
-                  videoContainer.appendChild(fallbackMsg);
-                });
-            }
-          }, 100);
-        } catch (err) {
-          console.error("Fatal video error:", err);
-          // Create fallback option
-          const fallbackEl = document.createElement('div');
-          fallbackEl.style.cssText = 'position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; background-color:rgba(0,0,0,0.7); color:white;';
-          fallbackEl.innerHTML = `<div style="text-align:center; padding:20px;">
-            <p>Unable to play video. <a href="${currentMedia.src}" target="_blank" style="color:skyblue; text-decoration:underline;">Open directly</a></p>
-          </div>`;
-          videoContainer.appendChild(fallbackEl);
-        }
+        videoRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch(err => console.error("Error playing video:", err));
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -440,56 +368,12 @@ const InPlaceMediaModal = ({
     
     setContentDimensions({ width, height });
     setIsLoading(false);
-    
-    // For videos, DON'T try to autoplay - let user explicitly play
-    // This helps with Vercel deployment where autoplay may be restricted
-    if (target.tagName === 'VIDEO' && currentMedia.type === 'video') {
-      // Just show the play button and wait for user interaction
-      console.log("Video loaded, ready for user to play:", currentMedia.src);
-      // Don't attempt autoplay - this will be more reliable across environments
-    }
   };
   
   // Add a media error handler
   const handleMediaError = (e) => {
     console.error("Error loading media:", e);
-    // Show error state but keep loading spinner hidden
     setIsLoading(false);
-    
-    // Check if this is a format/support error
-    let errorMessage = "Video failed to load.";
-    
-    if (e.target && e.target.error) {
-      if (e.target.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-        errorMessage = "This video format is not supported by your browser.";
-        
-        // For MOV files, try to switch to MP4 format if possible
-        if (currentMedia.src.toLowerCase().endsWith('.mov')) {
-          const mp4Path = currentMedia.src.replace('.mov', '.mp4');
-          
-          // Create a format error message with direct links
-          e.target.insertAdjacentHTML('afterend', 
-            `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            color: white; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 5px; text-align: center;">
-              <p style="margin-bottom: 10px;">${errorMessage}</p>
-              <div>
-                <a href="${mp4Path}" target="_blank" 
-                   style="display: inline-block; margin: 5px; padding: 8px 12px; background: #2196f3; 
-                   color: white; text-decoration: none; border-radius: 4px;">
-                  Open MP4 Version
-                </a>
-                <a href="${currentMedia.src}" target="_blank" 
-                   style="display: inline-block; margin: 5px; padding: 8px 12px; background: #4caf50; 
-                   color: white; text-decoration: none; border-radius: 4px;">
-                  Download Original
-                </a>
-              </div>
-            </div>`);
-        }
-      }
-    }
-    
-    // Do not automatically navigate or change media on error
   };
 
 // State for vertical swipe handling
@@ -653,95 +537,47 @@ const handleTouchEnd = (e) => {
           />
         ) : (
           <>
-            <div className="video-container" style={{
-              position: 'relative',
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#000'
-            }}>
-              {/* Show the poster image as a full background */}
-              {currentMedia.poster && (
-                <img 
-                  src={currentMedia.poster}
-                  alt={currentMedia.alt || "Video thumbnail"}
-                  style={{ 
-                    position: 'absolute',
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    opacity: 0.8
-                  }}
-                />
-              )}
-              
-              {/* Information overlay */}
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                color: 'white',
-                padding: '20px',
-                borderRadius: '10px',
-                textAlign: 'center',
-                maxWidth: '80%'
-              }}>
-                <h3 style={{marginBottom: '15px'}}>Video playback is available by clicking below</h3>
-                
-                <div style={{
-                  display: 'flex',
-                  flexDirection: window.innerWidth < 768 ? 'column' : 'row',
-                  justifyContent: 'center',
-                  gap: '10px'
-                }}>
-                  {/* Direct link button */}
-                  <a 
-                    href={currentMedia.src}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-block',
-                      backgroundColor: '#2196f3',
-                      color: 'white',
-                      padding: '10px 15px',
-                      borderRadius: '5px',
-                      textDecoration: 'none',
-                      fontWeight: 'bold'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Open Video in New Tab
-                  </a>
-                  
-                  {/* Download button */}
-                  <a 
-                    href={currentMedia.src}
-                    download
-                    style={{
-                      display: 'inline-block',
-                      backgroundColor: '#4caf50',
-                      color: 'white',
-                      padding: '10px 15px',
-                      borderRadius: '5px',
-                      textDecoration: 'none',
-                      fontWeight: 'bold'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Download Video
-                  </a>
-                </div>
-                
-                <p style={{marginTop: '15px', fontSize: '14px'}}>
-                  Note: The video may not play directly in this view on some devices.
-                </p>
+            <video 
+              ref={videoRef}
+              playsInline
+              controls
+              poster={currentMedia.poster || ''}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                cursor: 'pointer',
+                backgroundColor: '#000'
+              }}
+              onLoadedData={handleMediaLoaded}
+              onError={handleMediaError}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => setIsPlaying(false)}
+            >
+              <source src={currentMedia.src} type={currentMedia.src.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} />
+              <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
+                Your browser doesn't support HTML5 video.
+              </p>
+            </video>
+            
+            {/* Play/pause button overlay for videos - only show when controls are visible */}
+            {(showControls || !isPlaying) && (
+              <div 
+                className="play-button"
+                onClick={handlePlayClick}
+              >
+                {isPlaying ? (
+                  <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
               </div>
-            </div>
-            {/* No play button needed with direct link approach */}
+            )}
           </>
         )}
       </div>

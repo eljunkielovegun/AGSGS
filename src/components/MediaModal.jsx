@@ -1,14 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MediaModal = ({ media, onClose, performerName, performerPiece, performerInstrument }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
   
   // Close modal when Escape key is pressed
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose();
+      } else if (e.key === ' ' && media.type === 'video' && videoRef.current) {
+        // Space bar toggles play/pause for videos
+        e.preventDefault();
+        togglePlayPause();
       }
     };
 
@@ -22,11 +28,25 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
       // Restore body scroll
       document.body.style.overflow = 'auto';
     };
-  }, [onClose]);
+  }, [onClose, media.type]);
 
   // Handle media load completion
   const handleMediaLoaded = () => {
     setIsLoading(false);
+  };
+  
+  // Toggle play/pause for videos
+  const togglePlayPause = () => {
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play()
+          .then(() => setIsPlaying(true))
+          .catch(err => console.error("Error playing video:", err));
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
   };
 
   return (
@@ -71,89 +91,24 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
               className="max-w-full max-h-full"
               onLoad={handleMediaLoaded}
               style={{ opacity: isLoading ? 0.5 : 1 }}
-              // Add loading="lazy" for modern browsers
               loading="lazy"
             />
           ) : (
-            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              {/* Show poster image */}
-              {media.poster && (
-                <img 
-                  src={media.poster}
-                  alt={media.alt || "Video thumbnail"}
-                  style={{ 
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    opacity: 0.8
-                  }}
-                />
-              )}
-              
-              {/* Information overlay */}
-              <div style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                color: 'white',
-                padding: '20px',
-                borderRadius: '10px',
-                textAlign: 'center',
-                maxWidth: '80%'
-              }}>
-                <h3 style={{marginBottom: '15px'}}>Video playback is available by clicking below</h3>
-                
-                <div style={{
-                  display: 'flex',
-                  flexDirection: window.innerWidth < 768 ? 'column' : 'row',
-                  justifyContent: 'center',
-                  gap: '10px'
-                }}>
-                  {/* Direct link button */}
-                  <a 
-                    href={media.src}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      display: 'inline-block',
-                      backgroundColor: '#2196f3',
-                      color: 'white',
-                      padding: '10px 15px',
-                      borderRadius: '5px',
-                      textDecoration: 'none',
-                      fontWeight: 'bold'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Open Video in New Tab
-                  </a>
-                  
-                  {/* Download button */}
-                  <a 
-                    href={media.src}
-                    download
-                    style={{
-                      display: 'inline-block',
-                      backgroundColor: '#4caf50',
-                      color: 'white',
-                      padding: '10px 15px',
-                      borderRadius: '5px',
-                      textDecoration: 'none',
-                      fontWeight: 'bold'
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Download Video
-                  </a>
-                </div>
-                
-                <p style={{marginTop: '15px', fontSize: '14px'}}>
-                  Note: The video may not play directly in this view on some devices.
-                </p>
-              </div>
-            </div>
+            <video 
+              ref={videoRef}
+              controls 
+              playsInline
+              className="max-w-full max-h-full"
+              onLoadedData={handleMediaLoaded}
+              onError={(e) => console.error("Video error:", e)}
+              style={{ opacity: isLoading ? 0.5 : 1 }}
+              poster={media.poster || ''}
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => setIsPlaying(false)}
+            >
+              <source src={media.src} type={media.src.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} />
+            </video>
           )}
         </motion.div>
       </motion.div>
