@@ -21,7 +21,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Media files (if you're hosting them elsewhere)
-/public/images/performers/**/*.mov
-/public/images/performers/**/*.MP4
-/public/images/performers/**/*.MOV
+# Media files - temporarily enabling for Vercel deployment
+# /public/images/performers/**/*.mov
+# /public/images/performers/**/*.mp4
+# /public/images/performers/**/*.MP4
+# /public/images/performers/**/*.MOV
