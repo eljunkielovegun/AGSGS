@@ -7,37 +7,20 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
   const [videoPreloaded, setVideoPreloaded] = useState(false);
   const videoRef = useRef(null);
   
-  // Preload video when component mounts
-  const preloadVideo = useCallback(() => {
-    if (media.type === 'video' && !videoPreloaded) {
-      // Create a preload link
-      const preloadLink = document.createElement('link');
-      preloadLink.rel = 'preload';
-      preloadLink.as = 'video';
-      preloadLink.href = media.src;
-      document.head.appendChild(preloadLink);
-      
-      // Create a hidden video element to preload the video
-      const hiddenVideo = document.createElement('video');
-      hiddenVideo.preload = 'auto';
-      hiddenVideo.src = media.src;
-      hiddenVideo.style.display = 'none';
-      hiddenVideo.muted = true;
-      hiddenVideo.onloadeddata = () => {
-        console.log('Video preloaded:', media.src);
+  // Use the global video cache
+  useEffect(() => {
+    if (media.type === 'video' && !videoPreloaded && typeof window !== 'undefined') {
+      // Check if the video is already in the cache
+      if (window.videoCache && window.videoCache[media.src]) {
+        console.log('Video already in cache:', media.src);
         setVideoPreloaded(true);
-        document.body.removeChild(hiddenVideo);
-      };
-      document.body.appendChild(hiddenVideo);
+      } else if (window.preloadVideo) {
+        // Preload the video if it's not in the cache
+        window.preloadVideo(media.src);
+        setVideoPreloaded(true);
+      }
     }
   }, [media, videoPreloaded]);
-  
-  // Attempt to preload the video
-  useEffect(() => {
-    if (media.type === 'video') {
-      preloadVideo();
-    }
-  }, [media, preloadVideo]);
   
   // Close modal when Escape key is pressed
   useEffect(() => {
@@ -68,25 +51,62 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
     setIsLoading(false);
   };
   
-  // Toggle play/pause for videos
+  // Toggle play/pause with protection against AbortError
   const togglePlayPause = () => {
     if (!videoRef.current) return;
     
     try {
       if (videoRef.current.paused) {
-        const playPromise = videoRef.current.play();
-        
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsPlaying(true);
-            })
-            .catch(err => {
-              console.error("Error playing video:", err);
-              // Show error message instead of attempting autoplay
-              setIsPlaying(false);
-            });
+        // Ensure the video has the current and correct source
+        if (window.videoCache && window.videoCache[media.src]) {
+          console.log("Using cached video source");
+          
+          // Make sure video has correct source with timestamp to avoid caching issues
+          const timestamp = new Date().getTime();
+          const currentSrc = videoRef.current.querySelector('source').src;
+          
+          // Only update if needed
+          if (!currentSrc.includes(media.src)) {
+            videoRef.current.querySelector('source').src = 
+              `${media.src}?v=${timestamp}`;
+            videoRef.current.load();
+          }
         }
+        
+        // Delay the play slightly to let any source updates complete
+        setTimeout(() => {
+          const playPromise = videoRef.current.play();
+          
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log("Video playback started successfully");
+                setIsPlaying(true);
+              })
+              .catch(err => {
+                console.error("Error playing video:", err);
+                
+                // For AbortError, try again with a bit more delay
+                if (err.name === 'AbortError' && videoRef.current) {
+                  console.log("Detected AbortError, trying again...");
+                  
+                  // Try one more time with a longer delay
+                  setTimeout(() => {
+                    if (videoRef.current) {
+                      videoRef.current.play()
+                        .then(() => setIsPlaying(true))
+                        .catch(finalErr => {
+                          console.error("Final attempt failed:", finalErr);
+                          setIsPlaying(false);
+                        });
+                    }
+                  }, 500);
+                } else {
+                  setIsPlaying(false);
+                }
+              });
+          }
+        }, 100);
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -158,10 +178,28 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
                 onEnded={() => setIsPlaying(false)}
               >
                 <source 
-                  src={`${media.src}?cache=${new Date().getTime()}`} 
+                  src={`${media.src}?version=${encodeURIComponent(new Date().toISOString())}`} 
                   type={media.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'}
                 />
               </video>
+              
+              {/* Indication when video is ready */}
+              {!isPlaying && videoPreloaded && (
+                <div style={{
+                  position: 'absolute',
+                  bottom: '40px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  color: 'white',
+                  padding: '6px 12px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  zIndex: 10
+                }}>
+                  Video is ready. Click play to start.
+                </div>
+              )}
               
               {/* Play button for videos */}
               {!isPlaying && (

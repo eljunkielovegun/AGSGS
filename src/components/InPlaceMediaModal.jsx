@@ -64,36 +64,20 @@ const InPlaceMediaModal = ({
     setVideoPreloaded(false);
   }, [currentMediaIndex, currentMedia]);
   
-  // Preload videos when they become the current media
-  const preloadVideo = useCallback(() => {
-    if (currentMedia.type === 'video' && !videoPreloaded) {
-      const preloadLink = document.createElement('link');
-      preloadLink.rel = 'preload';
-      preloadLink.as = 'video';
-      preloadLink.href = currentMedia.src;
-      document.head.appendChild(preloadLink);
-      
-      // Create a hidden video element to preload the video
-      const hiddenVideo = document.createElement('video');
-      hiddenVideo.preload = 'auto';
-      hiddenVideo.src = currentMedia.src;
-      hiddenVideo.style.display = 'none';
-      hiddenVideo.muted = true;
-      hiddenVideo.onloadeddata = () => {
-        console.log('Video preloaded:', currentMedia.src);
+  // Use the global video cache
+  useEffect(() => {
+    if (currentMedia.type === 'video' && !videoPreloaded && typeof window !== 'undefined') {
+      // Check if the video is already in the cache
+      if (window.videoCache && window.videoCache[currentMedia.src]) {
+        console.log('Video already in cache:', currentMedia.src);
         setVideoPreloaded(true);
-        document.body.removeChild(hiddenVideo);
-      };
-      document.body.appendChild(hiddenVideo);
+      } else if (window.preloadVideo) {
+        // Preload the video if it's not in the cache
+        window.preloadVideo(currentMedia.src);
+        setVideoPreloaded(true);
+      }
     }
   }, [currentMedia, videoPreloaded]);
-  
-  // Preload the video when component mounts
-  useEffect(() => {
-    if (currentMedia.type === 'video') {
-      preloadVideo();
-    }
-  }, [currentMedia, preloadVideo]);
   
   // Handle key presses
   useEffect(() => {
@@ -159,25 +143,62 @@ const InPlaceMediaModal = ({
     }
   };
   
-  // Toggle play/pause for videos - with defensive programming
+  // Toggle play/pause with protection against AbortError
   const togglePlayPause = () => {
     if (!videoRef.current) return;
     
     try {
       if (videoRef.current.paused) {
-        const playPromise = videoRef.current.play();
-        
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsPlaying(true);
-            })
-            .catch(err => {
-              console.error("Error playing video:", err);
-              // Show error message instead of attempting autoplay
-              setIsPlaying(false);
-            });
+        // Ensure the video has the current and correct source
+        if (window.videoCache && window.videoCache[currentMedia.src]) {
+          console.log("Using cached video source");
+          
+          // Make sure video has correct source with timestamp to avoid caching issues
+          const timestamp = new Date().getTime();
+          const currentSrc = videoRef.current.querySelector('source').src;
+          
+          // Only update if needed
+          if (!currentSrc.includes(currentMedia.src)) {
+            videoRef.current.querySelector('source').src = 
+              `${currentMedia.src}?v=${timestamp}`;
+            videoRef.current.load();
+          }
         }
+        
+        // Delay the play slightly to let any source updates complete
+        setTimeout(() => {
+          const playPromise = videoRef.current.play();
+          
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log("Video playback started successfully");
+                setIsPlaying(true);
+              })
+              .catch(err => {
+                console.error("Error playing video:", err);
+                
+                // For AbortError, try again with a bit more delay
+                if (err.name === 'AbortError' && videoRef.current) {
+                  console.log("Detected AbortError, trying again...");
+                  
+                  // Try one more time with a longer delay
+                  setTimeout(() => {
+                    if (videoRef.current) {
+                      videoRef.current.play()
+                        .then(() => setIsPlaying(true))
+                        .catch(finalErr => {
+                          console.error("Final attempt failed:", finalErr);
+                          setIsPlaying(false);
+                        });
+                    }
+                  }, 500);
+                } else {
+                  setIsPlaying(false);
+                }
+              });
+          }
+        }, 100);
       } else {
         videoRef.current.pause();
         setIsPlaying(false);
@@ -610,16 +631,35 @@ const handleTouchEnd = (e) => {
                 preload="auto"
                 loop={false}
                 muted={false}
-                crossOrigin="anonymous"
               >
+                {/* Use the src directly for better compatibility */}
                 <source 
-                  src={`${currentMedia.src}?cache=${new Date().getTime()}`} 
+                  src={`${currentMedia.src}?version=${encodeURIComponent(new Date().toISOString())}`} 
                   type={currentMedia.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} 
                 />
                 <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
                   Your browser doesn't support HTML5 video.
                 </p>
               </video>
+              
+              {/* Fallback message for errors */}
+              {!isPlaying && videoPreloaded && (
+                <div style={{
+                  position: 'absolute',
+                  top: '70%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  backgroundColor: 'rgba(0,0,0,0.6)',
+                  color: 'white',
+                  padding: '10px',
+                  borderRadius: '5px',
+                  fontSize: '12px',
+                  textAlign: 'center',
+                  zIndex: 5
+                }}>
+                  Video is ready. Click play to start.
+                </div>
+              )}
               
               {/* Custom controls instead of native controls */}
               <div style={{

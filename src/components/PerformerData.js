@@ -1,6 +1,33 @@
 // This file contains the data for each performer including their position on stage,
 // name, and media files (images/videos)
 
+// Create a global video cache to preload videos
+if (typeof window !== 'undefined') {
+  window.videoCache = window.videoCache || {};
+  
+  // Function to preload videos and cache them
+  window.preloadVideo = function(src) {
+    if (!window.videoCache[src]) {
+      console.log('Preloading video:', src);
+      const video = document.createElement('video');
+      video.muted = true;
+      video.src = src;
+      video.preload = 'auto';
+      
+      // Store the video element in the cache
+      window.videoCache[src] = video;
+      
+      // Start preloading
+      video.load();
+      
+      // You can listen for when it's loaded
+      video.oncanplaythrough = function() {
+        console.log('Video preloaded:', src);
+      };
+    }
+  };
+}
+
 const performerData = [
   {
     id: 1,
@@ -191,5 +218,19 @@ const performerData = [
     carouselPosition: "top",
   },
 ];
+
+// Preload all video files when in browser environment
+if (typeof window !== 'undefined') {
+  performerData.forEach(performer => {
+    if (performer.media) {
+      performer.media.forEach(item => {
+        if (item.type === 'video') {
+          // Queue the preload after a short delay to avoid blocking page load
+          setTimeout(() => window.preloadVideo(item.src), 1000);
+        }
+      });
+    }
+  });
+}
 
 export default performerData;
