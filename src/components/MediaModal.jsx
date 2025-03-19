@@ -75,26 +75,45 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
               loading="lazy"
             />
           ) : (
-            <video 
-              controls 
-              playsInline
-              className="max-w-full max-h-full"
-              onLoadedData={handleMediaLoaded}
-              onError={(e) => console.error("Video error:", e)}
-              style={{ opacity: isLoading ? 0.5 : 1 }}
-              preload="auto"
-              crossOrigin="anonymous"
-            >
-              {/* Direct source for better compatibility */}
-              <source 
-                src={media.src} 
-                type={media.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 
-                     media.src.toLowerCase().endsWith('.mov') ? 'video/quicktime' : ''}
-              />
-              <div style={{color: 'white', padding: '20px', textAlign: 'center'}}>
-                Click to play video
-              </div>
-            </video>
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              <video 
+                controls 
+                playsInline
+                className="max-w-full max-h-full"
+                onLoadedData={handleMediaLoaded}
+                onError={(e) => console.error("Video error:", e)}
+                style={{ opacity: isLoading ? 0.5 : 1 }}
+                poster={media.poster}
+              >
+                {/* Use cache-busting query param */}
+                <source 
+                  src={`${media.src}?t=${new Date().getTime()}`} 
+                  type={media.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 
+                       media.src.toLowerCase().endsWith('.mov') ? 'video/quicktime' : ''}
+                />
+              </video>
+              
+              {/* Direct link fallback */}
+              <a 
+                href={media.src} 
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  position: 'absolute',
+                  bottom: '10px',
+                  right: '10px',
+                  backgroundColor: 'rgba(0,0,0,0.7)',
+                  color: 'white',
+                  padding: '5px 10px',
+                  borderRadius: '5px',
+                  fontSize: '12px',
+                  textDecoration: 'none'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                Direct Link
+              </a>
+            </div>
           )}
         </motion.div>
       </motion.div>
