@@ -369,19 +369,12 @@ const InPlaceMediaModal = ({
     setContentDimensions({ width, height });
     setIsLoading(false);
     
-    // For videos, try to play automatically if it's loaded
+    // For videos, DON'T try to autoplay - let user explicitly play
+    // This helps with Vercel deployment where autoplay may be restricted
     if (target.tagName === 'VIDEO' && currentMedia.type === 'video') {
-      // Small timeout to ensure everything is ready
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.play()
-            .then(() => setIsPlaying(true))
-            .catch(err => {
-              console.error("Error auto-playing video:", err);
-              // Don't set error state, as the video may still be manually playable
-            });
-        }
-      }, 100);
+      // Just show the play button and wait for user interaction
+      console.log("Video loaded, ready for user to play:", currentMedia.src);
+      // Don't attempt autoplay - this will be more reliable across environments
     }
   };
   
@@ -391,19 +384,18 @@ const InPlaceMediaModal = ({
     // Show error state but keep loading spinner hidden
     setIsLoading(false);
     
-    // If possible, try to recover by changing the video source format or falling back to an image
-    if (performer && performer.media) {
-      // Look for an alternative media item (possibly an image instead of video)
-      const alternativeMedia = performer.media.find(item => 
-        item.type === 'image' && item !== currentMedia
-      );
-      
-      if (alternativeMedia) {
-        console.log("Falling back to alternative media:", alternativeMedia.src);
-        // Set the alternative media
-        setCurrentMediaIndex(performer.media.indexOf(alternativeMedia));
-      }
+    // For Vercel deployment: Do NOT automatically switch to another media
+    // Just show an error indicator instead
+    const videoElement = e.target;
+    if (videoElement) {
+      // Add a retry button or message
+      videoElement.insertAdjacentHTML('afterend', 
+        '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); ' +
+        'color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px;">' +
+        'Video failed to load. Try clicking play button.</div>');
     }
+    
+    // Do not automatically navigate or change media on error
   };
 
 // State for vertical swipe handling
@@ -569,8 +561,9 @@ const handleTouchEnd = (e) => {
           <>
             <video 
               ref={videoRef}
-              playsInline // Important for mobile
-              preload="metadata"
+              playsInline
+              controls // Add native controls for better compatibility
+              preload="none" // Only load on user interaction
               style={{
                 width: '100%',
                 height: '100%',
@@ -584,17 +577,12 @@ const handleTouchEnd = (e) => {
               onPause={() => setIsPlaying(false)}
               onEnded={() => setIsPlaying(false)}
             >
-              {currentMedia.src.endsWith('.mp4') ? (
-                <source src={currentMedia.src} type="video/mp4" />
-              ) : currentMedia.src.endsWith('.mov') ? (
-                <source src={currentMedia.src} type="video/quicktime" />
-              ) : (
-                <>
-                  <source src={currentMedia.src} type="video/mp4" />
-                  <source src={currentMedia.src.replace('.mp4', '.mov')} type="video/quicktime" />
-                  <source src={currentMedia.src.replace('.mov', '.mp4')} type="video/mp4" />
-                </>
-              )}
+              {/* Simplified source handling for better compatibility */}
+              <source 
+                src={currentMedia.src} 
+                type={currentMedia.src.endsWith('.mp4') ? 'video/mp4' : 
+                     currentMedia.src.endsWith('.mov') ? 'video/quicktime' : ''}
+              />
               <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
                 Your browser doesn't support HTML5 video.
               </p>

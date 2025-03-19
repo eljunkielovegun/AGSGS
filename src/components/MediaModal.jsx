@@ -78,20 +78,22 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
             <video 
               controls 
               playsInline
-              autoPlay 
               className="max-w-full max-h-full"
               onLoadedData={handleMediaLoaded}
+              onError={(e) => console.error("Video error:", e)}
               style={{ opacity: isLoading ? 0.5 : 1 }}
-              // Preload metadata only, load full video when played
-              preload="metadata"
+              // Don't preload automatically - wait for user interaction
+              preload="none"
             >
-              {media.src.endsWith('.mp4') ? (
-                <source src={media.src} type="video/mp4" />
-              ) : media.src.endsWith('.mov') ? (
-                <source src={media.src} type="video/quicktime" />
-              ) : (
-                <source src={media.src} />
-              )}
+              {/* Single source with proper type */}
+              <source 
+                src={media.src} 
+                type={media.src.endsWith('.mp4') ? 'video/mp4' : 
+                     media.src.endsWith('.mov') ? 'video/quicktime' : ''}
+              />
+              <div style={{color: 'white', padding: '20px', textAlign: 'center'}}>
+                Click to play video
+              </div>
             </video>
           )}
         </motion.div>
