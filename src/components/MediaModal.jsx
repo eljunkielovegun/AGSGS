@@ -1,20 +1,14 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MediaModal = ({ media, onClose, performerName, performerPiece, performerInstrument }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const videoRef = useRef(null);
   
   // Close modal when Escape key is pressed
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         onClose();
-      } else if (e.key === ' ' && media.type === 'video' && videoRef.current) {
-        // Space bar toggles play/pause for videos
-        e.preventDefault();
-        togglePlayPause();
       }
     };
 
@@ -28,43 +22,11 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
       // Restore body scroll
       document.body.style.overflow = 'auto';
     };
-  }, [onClose, media.type]);
+  }, [onClose]);
 
   // Handle media load completion
   const handleMediaLoaded = () => {
     setIsLoading(false);
-  };
-  
-  // Toggle play/pause for videos with improved error handling
-  const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        // Make sure video is fully loaded before playing
-        const playVideo = () => {
-          // Make sure the element is still in the DOM
-          if (videoRef.current && document.contains(videoRef.current)) {
-            videoRef.current.play()
-              .then(() => setIsPlaying(true))
-              .catch(err => {
-                console.error("Error playing video:", err);
-                // If there's an abort error, wait and try again
-                if (err.name === 'AbortError') {
-                  console.log("Retrying playback after abort...");
-                  setTimeout(playVideo, 500); // Retry after 500ms
-                }
-              });
-          }
-        };
-        
-        // Short delay to ensure DOM is ready before playing
-        setTimeout(playVideo, 100);
-      } else {
-        if (videoRef.current) {
-          videoRef.current.pause();
-          setIsPlaying(false);
-        }
-      }
-    }
   };
 
   return (
@@ -113,46 +75,41 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
             />
           ) : (
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              <video 
-                ref={videoRef}
-                controls 
-                playsInline
-                className="max-w-full max-h-full"
-                onLoadedData={handleMediaLoaded}
-                onError={(e) => {
-                  console.error("Video error:", e);
-                  // Prevent default error handling
-                  e.preventDefault();
+              {/* Use iframe for more reliable video playback */}
+              <iframe
+                src={`https://player.cloudinary.com/embed/?cloud_name=demo&public_id=${media.src.split('/').pop().split('.')[0]}&fluid=true&controls=true&source[source_types][0]=mp4`}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  backgroundColor: '#000'
                 }}
-                style={{ opacity: isLoading ? 0.5 : 1 }}
-                poster={media.poster || ''}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onEnded={() => setIsPlaying(false)}
-                preload="auto"
-              >
-                <source 
-                  src={`${media.src}?v=${new Date().getTime()}`} 
-                  type={media.src.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} 
-                />
-              </video>
+                allow="autoplay; fullscreen"
+                allowFullScreen
+                onLoad={handleMediaLoaded}
+              ></iframe>
               
-              {/* Loading message if needed */}
-              {isLoading && (
-                <div style={{
+              {/* Direct video link */}
+              <a 
+                href={media.src} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{
                   position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
+                  bottom: '10px',
+                  right: '10px',
                   backgroundColor: 'rgba(0,0,0,0.7)',
                   color: 'white',
-                  padding: '15px',
+                  padding: '5px 10px',
+                  fontSize: '12px',
                   borderRadius: '4px',
-                  textAlign: 'center'
-                }}>
-                  <p>Loading video...</p>
-                </div>
-              )}
+                  textDecoration: 'none',
+                  zIndex: 100
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                Direct Link
+              </a>
             </div>
           )}
         </motion.div>

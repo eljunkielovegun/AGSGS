@@ -10,7 +10,6 @@ const InPlaceMediaModal = ({
   performer 
 }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [contentDimensions, setContentDimensions] = useState({ width: 0, height: 0 });
   const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -19,7 +18,6 @@ const InPlaceMediaModal = ({
   const [showControls, setShowControls] = useState(true);
   
   const backdropRef = useRef(null);
-  const videoRef = useRef(null);
   const controlsTimerRef = useRef(null);
   
   // Check device and orientation
@@ -57,11 +55,6 @@ const InPlaceMediaModal = ({
     ? performer.media[currentMediaIndex]
     : media;
   
-  // Reset playing state when media changes
-  useEffect(() => {
-    setIsPlaying(false);
-  }, [currentMediaIndex, currentMedia]);
-  
   // Handle key presses
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -71,10 +64,6 @@ const InPlaceMediaModal = ({
         nextMedia();
       } else if (e.key === 'ArrowLeft' && performer && performer.media) {
         prevMedia();
-      } else if (e.key === ' ' && currentMedia.type === 'video' && videoRef.current) {
-        // Space bar toggles play/pause for videos
-        e.preventDefault();
-        togglePlayPause();
       }
     };
 
@@ -85,31 +74,7 @@ const InPlaceMediaModal = ({
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'auto';
     };
-  }, [onClose, performer, currentMedia.type]);
-  
-  // Handle controls auto-hide timer
-  useEffect(() => {
-    if (isPlaying) {
-      // Start timer to hide controls
-      resetControlsTimer();
-    } else {
-      // Show controls when paused
-      setShowControls(true);
-      clearTimeout(controlsTimerRef.current);
-    }
-    
-    return () => clearTimeout(controlsTimerRef.current);
-  }, [isPlaying]);
-  
-  // Reset the controls auto-hide timer
-  const resetControlsTimer = () => {
-    clearTimeout(controlsTimerRef.current);
-    setShowControls(true);
-    
-    controlsTimerRef.current = setTimeout(() => {
-      setShowControls(false);
-    }, 3000); // Hide controls after 3 seconds
-  };
+  }, [onClose, performer]);
   
   // Navigation functions
   const nextMedia = () => {
@@ -123,38 +88,6 @@ const InPlaceMediaModal = ({
     if (performer && performer.media && performer.media.length > 1) {
       setCurrentMediaIndex((prev) => 
         prev > 0 ? prev - 1 : performer.media.length - 1);
-    }
-  };
-  
-  // Toggle play/pause for videos with improved error handling
-  const togglePlayPause = () => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        // Make sure video is fully loaded before playing
-        const playVideo = () => {
-          // Make sure the element is still in the DOM
-          if (videoRef.current && document.contains(videoRef.current)) {
-            videoRef.current.play()
-              .then(() => setIsPlaying(true))
-              .catch(err => {
-                console.error("Error playing video:", err);
-                // If there's an abort error, wait and try again
-                if (err.name === 'AbortError') {
-                  console.log("Retrying playback after abort...");
-                  setTimeout(playVideo, 500); // Retry after 500ms
-                }
-              });
-          }
-        };
-        
-        // Short delay to ensure DOM is ready before playing
-        setTimeout(playVideo, 100);
-      } else {
-        if (videoRef.current) {
-          videoRef.current.pause();
-          setIsPlaying(false);
-        }
-      }
     }
   };
   
@@ -339,6 +272,12 @@ const InPlaceMediaModal = ({
           height: 16px;
         }
       }
+
+      /* Animation for spinner */
+      @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
     `;
     
     document.head.appendChild(styleEl);
@@ -351,8 +290,8 @@ const InPlaceMediaModal = ({
   // Handle media load completion with consistent height sizing
   const handleMediaLoaded = (e) => {
     const target = e.target;
-    const naturalWidth = target.naturalWidth || target.videoWidth || 640;
-    const naturalHeight = target.naturalHeight || target.videoHeight || 360;
+    const naturalWidth = target.naturalWidth || 640;
+    const naturalHeight = target.naturalHeight || 360;
     
     // Calculate dimensions
     const viewportHeight = window.innerHeight;
@@ -387,26 +326,6 @@ const InPlaceMediaModal = ({
     setContentDimensions({ width, height });
     setIsLoading(false);
   };
-  
-  // Add a media error handler with improved error handling
-  const handleMediaError = (e) => {
-    console.error("Error loading media:", e);
-    setIsLoading(false);
-    
-    // Don't automatically navigate on error
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // If there's an error with the video, show a message
-    if (e.target.tagName === 'VIDEO') {
-      // Try to reload the video after a short delay
-      setTimeout(() => {
-        if (videoRef.current && document.contains(videoRef.current)) {
-          videoRef.current.load();
-        }
-      }, 1000);
-    }
-  };
 
 // State for vertical swipe handling
 const [swipeStartY, setSwipeStartY] = useState(null);
@@ -416,7 +335,6 @@ const handleTouchStart = (e) => {
   if (isMobile) {
     setSwipeStartX(e.touches[0].clientX);
     setSwipeStartY(e.touches[0].clientY);
-    resetControlsTimer();
   }
 };
 
@@ -459,22 +377,13 @@ const handleTouchEnd = (e) => {
   
   // Event handlers
   const handleClick = (e) => {
-    // Reset controls timer on any click
-    resetControlsTimer();
-    
     // Handle clicks on the content
-    if ((e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO') && 
+    if (e.target.tagName === 'IMG' && 
         !e.target.closest('.play-button') && !e.target.closest('.nav-button') && !e.target.closest('.close-button')) {
       e.stopPropagation();
       
-      // Toggle controls visibility on content tap for mobile
-      if (isMobile) {
-        setShowControls(!showControls);
-      } else if (currentMedia.type === 'video') {
-        // For desktop, toggle play/pause on video click
-        togglePlayPause();
-      } else {
-        // For images on desktop, go to next media
+      if (currentMedia.type === 'image') {
+        // For images, go to next media
         nextMedia();
       }
     }
@@ -484,13 +393,6 @@ const handleTouchEnd = (e) => {
     }
   };
   
-  // Handle play button click
-  const handlePlayClick = (e) => {
-    e.stopPropagation(); // Prevent navigation
-    togglePlayPause();
-    resetControlsTimer();
-  };
-
   return (
     <div 
       className="modal-backdrop" 
@@ -528,11 +430,8 @@ const handleTouchEnd = (e) => {
         </svg>
       </div>
       
-      {/* Performer info at top - collapsible on mobile */}
-      <div className="modal-info" style={{
-        opacity: showControls || !isPlaying ? 1 : 0,
-        pointerEvents: showControls || !isPlaying ? 'auto' : 'none'
-      }}>
+      {/* Performer info at top */}
+      <div className="modal-info">
         <h2>{performerName}</h2>
         <h3>"{performerPiece}"</h3>
         <p>{performerInstrument}</p>
@@ -540,7 +439,7 @@ const handleTouchEnd = (e) => {
         {performer && performer.media && performer.media.length > 1 && (
           <p className="counter">
             {currentMediaIndex + 1} / {performer.media.length}
-            {!isMobile && ` • ${currentMedia.type === 'image' ? 'Click image for next' : 'Space to play/pause'} • Click outside to close`}
+            {!isMobile && ` • ${currentMedia.type === 'image' ? 'Click image for next' : 'Use video controls'} • Click outside to close`}
             {isMobile && ` • Swipe to navigate`}
           </p>
         )}
@@ -568,110 +467,53 @@ const handleTouchEnd = (e) => {
             onLoad={handleMediaLoaded}
           />
         ) : (
-          <>
-            <div className="video-container" style={{ 
-              width: '100%', 
-              height: '100%', 
-              position: 'relative',
-              backgroundColor: '#000'
-            }}>
-              <video 
-                ref={videoRef}
-                playsInline
-                controls
-                poster={currentMedia.poster || ''}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  cursor: 'pointer'
-                }}
-                onLoadedData={handleMediaLoaded}
-                onLoadedMetadata={() => {
-                  // Make sure video is fully loaded
-                  setIsLoading(false);
-                }}
-                onError={handleMediaError}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onEnded={() => setIsPlaying(false)}
-                preload="auto" 
-                muted={false}
-              >
-                <source 
-                  src={`${currentMedia.src}?v=${new Date().getTime()}`} 
-                  type={currentMedia.src.endsWith('.mp4') ? 'video/mp4' : 'video/quicktime'} 
-                />
-                <p style={{color: 'white', padding: '20px', textAlign: 'center'}}>
-                  Your browser doesn't support HTML5 video.
-                </p>
-              </video>
-              
-              {/* Error message overlay (only shown when there's an error) */}
-              {isLoading && (
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  backgroundColor: 'rgba(0,0,0,0.7)',
-                  color: 'white',
-                  padding: '15px',
-                  borderRadius: '4px',
-                  textAlign: 'center',
-                  zIndex: 5
-                }}>
-                  <p>Loading video... if it does not start, try clicking the play button again.</p>
-                </div>
-              )}
-            </div>
+          <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+            {/* For videos, use iframe to YouTube embed */}
+            <iframe
+              src={`https://player.cloudinary.com/embed/?cloud_name=demo&public_id=${currentMedia.src.split('/').pop().split('.')[0]}&fluid=true&controls=true&source[source_types][0]=mp4`}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                backgroundColor: '#000'
+              }}
+              allow="autoplay; fullscreen"
+              allowFullScreen
+            ></iframe>
             
-            {/* Play/pause button overlay for videos - only show when controls are visible */}
-            {(showControls || !isPlaying) && (
-              <div 
-                className="play-button"
-                onClick={handlePlayClick}
-              >
-                {isPlaying ? (
-                  <svg viewBox="0 0 24 24" fill="white">
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" fill="white">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </div>
-            )}
-          </>
+            {/* Direct video link button */}
+            <a 
+              href={currentMedia.src} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{
+                position: 'absolute',
+                bottom: '10px',
+                right: '10px',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                padding: '5px 10px',
+                fontSize: '12px',
+                borderRadius: '4px',
+                textDecoration: 'none',
+                zIndex: 100
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              Direct Link
+            </a>
+          </div>
         )}
       </div>
       
       {/* Bottom controls for navigation - only show when multiple media items */}
       {performer && performer.media && performer.media.length > 1 && (
-        <div className="controls-container" style={{
-          opacity: showControls || !isPlaying ? 1 : 0,
-          pointerEvents: showControls || !isPlaying ? 'auto' : 'none'
-        }}>
+        <div className="controls-container">
           <div className="nav-button" onClick={(e) => { e.stopPropagation(); prevMedia(); }}>
             <svg viewBox="0 0 24 24" fill="white">
               <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
             </svg>
           </div>
-          
-          {currentMedia.type === 'video' && (
-            <div className="nav-button" onClick={(e) => { e.stopPropagation(); togglePlayPause(); }}>
-              {isPlaying ? (
-                <svg viewBox="0 0 24 24" fill="white">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" fill="white">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              )}
-            </div>
-          )}
           
           <div className="nav-button" onClick={(e) => { e.stopPropagation(); nextMedia(); }}>
             <svg viewBox="0 0 24 24" fill="white">
