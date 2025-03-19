@@ -456,15 +456,37 @@ const InPlaceMediaModal = ({
     // Show error state but keep loading spinner hidden
     setIsLoading(false);
     
-    // For Vercel deployment: Do NOT automatically switch to another media
-    // Just show an error indicator instead
-    const videoElement = e.target;
-    if (videoElement) {
-      // Add a retry button or message
-      videoElement.insertAdjacentHTML('afterend', 
-        '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); ' +
-        'color: white; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 5px;">' +
-        'Video failed to load. Try clicking play button.</div>');
+    // Check if this is a format/support error
+    let errorMessage = "Video failed to load.";
+    
+    if (e.target && e.target.error) {
+      if (e.target.error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+        errorMessage = "This video format is not supported by your browser.";
+        
+        // For MOV files, try to switch to MP4 format if possible
+        if (currentMedia.src.toLowerCase().endsWith('.mov')) {
+          const mp4Path = currentMedia.src.replace('.mov', '.mp4');
+          
+          // Create a format error message with direct links
+          e.target.insertAdjacentHTML('afterend', 
+            `<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            color: white; background: rgba(0,0,0,0.7); padding: 15px; border-radius: 5px; text-align: center;">
+              <p style="margin-bottom: 10px;">${errorMessage}</p>
+              <div>
+                <a href="${mp4Path}" target="_blank" 
+                   style="display: inline-block; margin: 5px; padding: 8px 12px; background: #2196f3; 
+                   color: white; text-decoration: none; border-radius: 4px;">
+                  Open MP4 Version
+                </a>
+                <a href="${currentMedia.src}" target="_blank" 
+                   style="display: inline-block; margin: 5px; padding: 8px 12px; background: #4caf50; 
+                   color: white; text-decoration: none; border-radius: 4px;">
+                  Download Original
+                </a>
+              </div>
+            </div>`);
+        }
+      }
     }
     
     // Do not automatically navigate or change media on error
@@ -659,12 +681,36 @@ const handleTouchEnd = (e) => {
                 onEnded={() => setIsPlaying(false)}
                 muted={false}
               >
-                {/* Use video with cache-busting timestamp */}
+                {/* Try MP4 format (most compatible) */}
                 <source 
-                  src={`${currentMedia.src}?t=${new Date().getTime()}`}
-                  type={currentMedia.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 
-                      currentMedia.src.toLowerCase().endsWith('.mov') ? 'video/quicktime' : ''}
+                  src={`${currentMedia.src.replace('.mov', '.mp4')}?t=${new Date().getTime()}`}
+                  type="video/mp4"
                 />
+                
+                {/* Fallback to MOV if needed */}
+                {currentMedia.src.toLowerCase().endsWith('.mov') && (
+                  <source 
+                    src={`${currentMedia.src}?t=${new Date().getTime()}`}
+                    type="video/quicktime"
+                  />
+                )}
+                
+                {/* Provide download link if nothing plays */}
+                <div style={{
+                  color: 'white', 
+                  padding: '20px', 
+                  textAlign: 'center', 
+                  backgroundColor: 'rgba(0,0,0,0.7)'
+                }}>
+                  <p>Your browser doesn't support this video format.</p>
+                  <a 
+                    href={currentMedia.src}
+                    download
+                    style={{color: 'skyblue', textDecoration: 'underline'}}
+                  >
+                    Download Video
+                  </a>
+                </div>
               </video>
               
               {/* Fallback direct link */}

@@ -85,12 +85,19 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
                 style={{ opacity: isLoading ? 0.5 : 1 }}
                 poster={media.poster}
               >
-                {/* Use cache-busting query param */}
+                {/* Try MP4 format (most compatible) */}
                 <source 
-                  src={`${media.src}?t=${new Date().getTime()}`} 
-                  type={media.src.toLowerCase().endsWith('.mp4') ? 'video/mp4' : 
-                       media.src.toLowerCase().endsWith('.mov') ? 'video/quicktime' : ''}
+                  src={`${media.src.replace('.mov', '.mp4')}?t=${new Date().getTime()}`}
+                  type="video/mp4"
                 />
+                
+                {/* Fallback to MOV if needed */}
+                {media.src.toLowerCase().endsWith('.mov') && (
+                  <source 
+                    src={`${media.src}?t=${new Date().getTime()}`}
+                    type="video/quicktime"
+                  />
+                )}
               </video>
               
               {/* Direct link fallback */}
