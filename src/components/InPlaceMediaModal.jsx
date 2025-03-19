@@ -662,96 +662,86 @@ const handleTouchEnd = (e) => {
               justifyContent: 'center',
               backgroundColor: '#000'
             }}>
-              <video 
-                ref={videoRef}
-                playsInline
-                controls
-                poster={currentMedia.poster || ''}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  cursor: 'pointer',
-                  backgroundColor: '#000'
-                }}
-                onLoadedData={handleMediaLoaded}
-                onError={handleMediaError}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onEnded={() => setIsPlaying(false)}
-                muted={false}
-              >
-                {/* Try MP4 format (most compatible) */}
-                <source 
-                  src={`${currentMedia.src.replace('.mov', '.mp4')}?t=${new Date().getTime()}`}
-                  type="video/mp4"
+              {/* Show the poster image as a full background */}
+              {currentMedia.poster && (
+                <img 
+                  src={currentMedia.poster}
+                  alt={currentMedia.alt || "Video thumbnail"}
+                  style={{ 
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    opacity: 0.8
+                  }}
                 />
+              )}
+              
+              {/* Information overlay */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                padding: '20px',
+                borderRadius: '10px',
+                textAlign: 'center',
+                maxWidth: '80%'
+              }}>
+                <h3 style={{marginBottom: '15px'}}>Video playback is available by clicking below</h3>
                 
-                {/* Fallback to MOV if needed */}
-                {currentMedia.src.toLowerCase().endsWith('.mov') && (
-                  <source 
-                    src={`${currentMedia.src}?t=${new Date().getTime()}`}
-                    type="video/quicktime"
-                  />
-                )}
-                
-                {/* Provide download link if nothing plays */}
                 <div style={{
-                  color: 'white', 
-                  padding: '20px', 
-                  textAlign: 'center', 
-                  backgroundColor: 'rgba(0,0,0,0.7)'
+                  display: 'flex',
+                  flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+                  justifyContent: 'center',
+                  gap: '10px'
                 }}>
-                  <p>Your browser doesn't support this video format.</p>
+                  {/* Direct link button */}
+                  <a 
+                    href={currentMedia.src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      backgroundColor: '#2196f3',
+                      color: 'white',
+                      padding: '10px 15px',
+                      borderRadius: '5px',
+                      textDecoration: 'none',
+                      fontWeight: 'bold'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Open Video in New Tab
+                  </a>
+                  
+                  {/* Download button */}
                   <a 
                     href={currentMedia.src}
                     download
-                    style={{color: 'skyblue', textDecoration: 'underline'}}
+                    style={{
+                      display: 'inline-block',
+                      backgroundColor: '#4caf50',
+                      color: 'white',
+                      padding: '10px 15px',
+                      borderRadius: '5px',
+                      textDecoration: 'none',
+                      fontWeight: 'bold'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
                   >
                     Download Video
                   </a>
                 </div>
-              </video>
-              
-              {/* Fallback direct link */}
-              <a 
-                href={currentMedia.src} 
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  position: 'absolute',
-                  bottom: '10px',
-                  right: '10px',
-                  backgroundColor: 'rgba(0,0,0,0.7)',
-                  color: 'white',
-                  padding: '5px 10px',
-                  borderRadius: '5px',
-                  fontSize: '12px',
-                  textDecoration: 'none',
-                  zIndex: 1000
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                Direct Link
-              </a>
-            </div>
-            {/* Play/pause button overlay for videos - only show when controls are visible */}
-            {(showControls || !isPlaying) && (
-              <div 
-                className="play-button"
-                onClick={handlePlayClick}
-              >
-                {isPlaying ? (
-                  <svg viewBox="0 0 24 24" fill="white">
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" fill="white">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
+                
+                <p style={{marginTop: '15px', fontSize: '14px'}}>
+                  Note: The video may not play directly in this view on some devices.
+                </p>
               </div>
-            )}
+            </div>
+            {/* No play button needed with direct link approach */}
           </>
         )}
       </div>

@@ -98,8 +98,8 @@ const performerData = [
       { type: "image", src: "/images/performers/patton/KP_Live-4.jpg", alt: "Kevin Patton performing" },
       { type: "image", src: "/images/performers/patton/KP_Live-5.jpg", alt: "Kevin Patton performance" },
 
-      // Use MP4 format instead of MOV for better browser compatibility
-      { type: "video", src: "/images/performers/patton/KP_Live.mp4", alt: "Kevin Patton live performance video", poster: "/images/performers/patton/KP_Live-1.jpg" },
+      // Original MOV file format
+      { type: "video", src: "/images/performers/patton/KP_Live.mov", alt: "Kevin Patton live performance video", poster: "/images/performers/patton/KP_Live-1.jpg" },
 
       { type: "image", src: "/images/performers/patton/KP_Max.jpg", alt: "Kevin's Max/MSP patch" },
       { type: "image", src: "/images/performers/patton/KP_Pedals.JPG", alt: "Kevin's pedal setup" },

@@ -76,50 +76,83 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
             />
           ) : (
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-              <video 
-                controls 
-                playsInline
-                className="max-w-full max-h-full"
-                onLoadedData={handleMediaLoaded}
-                onError={(e) => console.error("Video error:", e)}
-                style={{ opacity: isLoading ? 0.5 : 1 }}
-                poster={media.poster}
-              >
-                {/* Try MP4 format (most compatible) */}
-                <source 
-                  src={`${media.src.replace('.mov', '.mp4')}?t=${new Date().getTime()}`}
-                  type="video/mp4"
+              {/* Show poster image */}
+              {media.poster && (
+                <img 
+                  src={media.poster}
+                  alt={media.alt || "Video thumbnail"}
+                  style={{ 
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    opacity: 0.8
+                  }}
                 />
-                
-                {/* Fallback to MOV if needed */}
-                {media.src.toLowerCase().endsWith('.mov') && (
-                  <source 
-                    src={`${media.src}?t=${new Date().getTime()}`}
-                    type="video/quicktime"
-                  />
-                )}
-              </video>
+              )}
               
-              {/* Direct link fallback */}
-              <a 
-                href={media.src} 
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  position: 'absolute',
-                  bottom: '10px',
-                  right: '10px',
-                  backgroundColor: 'rgba(0,0,0,0.7)',
-                  color: 'white',
-                  padding: '5px 10px',
-                  borderRadius: '5px',
-                  fontSize: '12px',
-                  textDecoration: 'none'
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                Direct Link
-              </a>
+              {/* Information overlay */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                color: 'white',
+                padding: '20px',
+                borderRadius: '10px',
+                textAlign: 'center',
+                maxWidth: '80%'
+              }}>
+                <h3 style={{marginBottom: '15px'}}>Video playback is available by clicking below</h3>
+                
+                <div style={{
+                  display: 'flex',
+                  flexDirection: window.innerWidth < 768 ? 'column' : 'row',
+                  justifyContent: 'center',
+                  gap: '10px'
+                }}>
+                  {/* Direct link button */}
+                  <a 
+                    href={media.src}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-block',
+                      backgroundColor: '#2196f3',
+                      color: 'white',
+                      padding: '10px 15px',
+                      borderRadius: '5px',
+                      textDecoration: 'none',
+                      fontWeight: 'bold'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Open Video in New Tab
+                  </a>
+                  
+                  {/* Download button */}
+                  <a 
+                    href={media.src}
+                    download
+                    style={{
+                      display: 'inline-block',
+                      backgroundColor: '#4caf50',
+                      color: 'white',
+                      padding: '10px 15px',
+                      borderRadius: '5px',
+                      textDecoration: 'none',
+                      fontWeight: 'bold'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Download Video
+                  </a>
+                </div>
+                
+                <p style={{marginTop: '15px', fontSize: '14px'}}>
+                  Note: The video may not play directly in this view on some devices.
+                </p>
+              </div>
             </div>
           )}
         </motion.div>
