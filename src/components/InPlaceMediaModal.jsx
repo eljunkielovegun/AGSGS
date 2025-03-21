@@ -572,24 +572,7 @@ const handleTouchEnd = (e) => {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Loading spinner */}
-      {isLoading && (
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)'
-        }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            border: '4px solid rgba(255, 255, 255, 0.3)',
-            borderRadius: '50%',
-            borderTop: '4px solid white',
-            animation: 'spin 1s linear infinite'
-          }}></div>
-        </div>
-      )}
+      {/* Loading spinner moved to video container for better alignment */}
       
       {/* Close button (always visible) */}
       <div 
@@ -642,15 +625,16 @@ const handleTouchEnd = (e) => {
           />
         ) : (
           <>
+            {/* Video container with loading spinner and play button in the same context */}
             <div style={{ position: 'relative', width: '100%', height: '100%' }}>
               <video 
                 ref={videoRef}
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  cursor: 'pointer',
-                  backgroundColor: '#000'
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain',
+                cursor: 'pointer',
+                backgroundColor: '#000'
                 }}
                 poster={currentMedia.poster}
                 onLoadedData={handleMediaLoaded}
@@ -662,7 +646,7 @@ const handleTouchEnd = (e) => {
                 preload="auto"
                 loop={false}
                 muted={false}
-              >
+                >
                 {/* Use the src directly for better compatibility */}
                 <source 
                   src={`${currentMedia.src}?version=${encodeURIComponent(new Date().toISOString())}`} 
@@ -673,60 +657,32 @@ const handleTouchEnd = (e) => {
                 </p>
               </video>
               
-              {/* Ready state indicator removed */}
+              {/* Loading spinner perfectly centered */}
+              {isLoading && (
+                <div className="play-button" style={{ pointerEvents: 'none' }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    border: '3px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '50%',
+                    borderTop: '3px solid white',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                </div>
+              )}
               
-              {/* Custom controls instead of native controls */}
-              <div style={{
-                position: 'absolute',
-                bottom: '10px',
-                left: '10px',
-                right: '10px',
-                padding: '5px',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                borderRadius: '4px',
-                opacity: showControls ? 1 : 0,
-                transition: 'opacity 0.3s ease',
-                pointerEvents: showControls ? 'auto' : 'none'
-              }}>
-                <button 
-                  onClick={togglePlayPause}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'white',
-                    cursor: 'pointer',
-                    padding: '5px 10px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
+              {/* Play button - uses same styling as loading spinner for perfect alignment */}
+              {!isPlaying && !isLoading && (
+                <div 
+                  className="play-button"
+                  onClick={handlePlayClick}
                 >
-                  {isPlaying ? 
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                    </svg> : 
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  }
-                </button>
-              </div>
+                  <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </div>
+              )}
             </div>
-            
-            {/* Play/pause button overlay for videos - only show when not playing */}
-            {!isPlaying && (
-              <div 
-                className="play-button"
-                onClick={handlePlayClick}
-              >
-                <svg viewBox="0 0 24 24" fill="white">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-            )}
           </>
         )}
       </div>
@@ -743,17 +699,12 @@ const handleTouchEnd = (e) => {
             </svg>
           </div>
           
-          {currentMedia.type === 'video' && (
+          {/* Only show play/pause in bottom controls when already playing */}
+          {currentMedia.type === 'video' && isPlaying && (
             <div className="nav-button" onClick={(e) => { e.stopPropagation(); togglePlayPause(); }}>
-              {isPlaying ? (
-                <svg viewBox="0 0 24 24" fill="white">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                </svg>
-              ) : (
-                <svg viewBox="0 0 24 24" fill="white">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              )}
+              <svg viewBox="0 0 24 24" fill="white">
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+              </svg>
             </div>
           )}
           

@@ -160,12 +160,7 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
         exit={{ opacity: 0 }}
         onClick={onClose}
       >
-        {/* Loading spinner - only shown while media is loading */}
-        {isLoading && (
-          <div className="loading-spinner-container">
-            <div className="loading-spinner"></div>
-          </div>
-        )}
+        {/* Loading spinner moved to video container */}
         
         {/* Information overlay */}
         <div className="absolute top-4 left-4 z-10 p-4 bg-black bg-opacity-70 rounded-lg max-w-md">
@@ -218,10 +213,35 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
                 />
               </video>
               
-              {/* Ready state indicator removed */}
+              {/* Loading spinner perfectly centered */}
+              {isLoading && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  width: '60px',
+                  height: '60px',
+                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 10
+                }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    border: '3px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '50%',
+                    borderTop: '3px solid white',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                </div>
+              )}
               
               {/* Play button for videos */}
-              {!isPlaying && (
+              {!isPlaying && !isLoading && (
                 <div 
                   style={{
                     position: 'absolute',
