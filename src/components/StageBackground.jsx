@@ -75,7 +75,7 @@ const StageBackground = ({ children }) => {
           zIndex: 1
         }}
         onError={(e) => {
-          console.log("Background image failed to load, trying fallback");
+          // Background image failed to load, trying fallback
           e.target.onerror = null;
           e.target.src = "/images/stage-background.jpg"; // Fallback to desktop version
         }}

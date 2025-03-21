@@ -91,7 +91,7 @@ const InPlaceMediaModal = ({
     if (currentMedia.type === 'video' && !videoPreloaded && typeof window !== 'undefined') {
       // Check if the video is already in the cache
       if (window.videoCache && window.videoCache[currentMedia.src]) {
-        console.log('Video already in cache:', currentMedia.src);
+        // Video already in cache
         setVideoPreloaded(true);
       } else if (window.preloadVideo) {
         // Preload the video if it's not in the cache
@@ -173,7 +173,7 @@ const InPlaceMediaModal = ({
       if (videoRef.current.paused) {
         // Ensure the video has the current and correct source
         if (window.videoCache && window.videoCache[currentMedia.src]) {
-          console.log("Using cached video source");
+          // Using cached video source
           
           // Make sure video has correct source with timestamp to avoid caching issues
           const timestamp = new Date().getTime();
@@ -203,15 +203,13 @@ const InPlaceMediaModal = ({
           if (playPromise !== undefined) {
             playPromise
               .then(() => {
-                console.log("Video playback started successfully");
+                // Video playback started successfully
                 setIsPlaying(true);
               })
               .catch(err => {
-                console.error("Error playing video:", err);
-                
                 // For AbortError, try again with a bit more delay
                 if (err.name === 'AbortError' && videoRef.current) {
-                  console.log("Detected AbortError, trying again...");
+                  // Detected AbortError, trying again...
                   
                   // Try one more time with a longer delay
                   setTimeout(() => {
@@ -219,7 +217,7 @@ const InPlaceMediaModal = ({
                       videoRef.current.play()
                         .then(() => setIsPlaying(true))
                         .catch(finalErr => {
-                          console.error("Final attempt failed:", finalErr);
+                          // Final attempt failed
                           setIsPlaying(false);
                         });
                     }
@@ -235,7 +233,7 @@ const InPlaceMediaModal = ({
         setIsPlaying(false);
       }
     } catch (error) {
-      console.error("Exception in togglePlayPause:", error);
+      // Exception in togglePlayPause
     }
   };
   
@@ -477,7 +475,7 @@ const InPlaceMediaModal = ({
   
   // Media error handler - now just logs the error but doesn't try to auto-navigate
   const handleMediaError = (e) => {
-    console.error("Error loading media:", e);
+    // Error loading media
     setIsLoading(false);
   };
 

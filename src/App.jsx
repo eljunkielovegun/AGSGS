@@ -151,10 +151,7 @@ function App() {
         )}
       </div>
       
-      {/* Debug info - hidden */}
-      <div style={{ display: 'none' }}>
-        {console.log("App rendered, isMobile:", isMobile)}
-      </div>
+      {/* Debug info removed */}
     </div>
   );
 }

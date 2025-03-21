@@ -34,7 +34,6 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
     if (media.type === 'video' && !videoPreloaded && typeof window !== 'undefined') {
       // Check if the video is already in the cache
       if (window.videoCache && window.videoCache[media.src]) {
-        console.log('Video already in cache:', media.src);
         setVideoPreloaded(true);
       } else if (window.preloadVideo) {
         // Preload the video if it's not in the cache
@@ -81,8 +80,6 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
       if (videoRef.current.paused) {
         // Ensure the video has the current and correct source
         if (window.videoCache && window.videoCache[media.src]) {
-          console.log("Using cached video source");
-          
           // Make sure video has correct source with timestamp to avoid caching issues
           const timestamp = new Date().getTime();
           const currentSrc = videoRef.current.querySelector('source').src;
@@ -115,15 +112,13 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
           if (playPromise !== undefined) {
             playPromise
               .then(() => {
-                console.log("Video playback started successfully");
+                // Video playback started successfully
                 setIsPlaying(true);
               })
               .catch(err => {
-                console.error("Error playing video:", err);
-                
                 // For AbortError, try again with a bit more delay
                 if (err.name === 'AbortError' && videoRef.current) {
-                  console.log("Detected AbortError, trying again...");
+                  // Detected AbortError, trying again...
                   
                   // Try one more time with a longer delay
                   setTimeout(() => {
@@ -131,7 +126,7 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
                       videoRef.current.play()
                         .then(() => setIsPlaying(true))
                         .catch(finalErr => {
-                          console.error("Final attempt failed:", finalErr);
+                          // Final attempt failed
                           setIsPlaying(false);
                         });
                     }
@@ -147,7 +142,7 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
         setIsPlaying(false);
       }
     } catch (error) {
-      console.error("Exception in togglePlayPause:", error);
+      // Exception in togglePlayPause
     }
   };
 
@@ -196,7 +191,7 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
                 ref={videoRef}
                 className="max-w-full max-h-full"
                 onLoadedData={handleMediaLoaded}
-                onError={(e) => console.error("Video error:", e)}
+                onError={(e) => {/* Video error handler */}}
                 style={{ opacity: isLoading ? 0.5 : 1 }}
                 poster={media.poster}
                 playsInline

@@ -9,7 +9,7 @@ if (typeof window !== 'undefined') {
   // Function to preload videos and cache them
   window.preloadVideo = function(src) {
     if (!window.videoCache[src]) {
-      console.log('Preloading video:', src);
+      // Preloading video
       const video = document.createElement('video');
       video.muted = true;
       video.src = src;
@@ -23,7 +23,7 @@ if (typeof window !== 'undefined') {
       
       // You can listen for when it's loaded
       video.oncanplaythrough = function() {
-        console.log('Video preloaded:', src);
+        // Video preloaded
       };
     }
   };
