@@ -4,6 +4,7 @@
 // Create a global video cache to preload videos
 if (typeof window !== 'undefined') {
   window.videoCache = window.videoCache || {};
+  window.activeVideoRefs = window.activeVideoRefs || new Set();
   
   // Function to preload videos and cache them
   window.preloadVideo = function(src) {
@@ -26,6 +27,17 @@ if (typeof window !== 'undefined') {
       };
     }
   };
+
+  // Function to ensure only one video plays at a time
+  window.ensureSingleVideoPlayback = function(currentVideoRef) {
+    if (window.activeVideoRefs) {
+      window.activeVideoRefs.forEach(ref => {
+        if (ref !== currentVideoRef && ref.current && !ref.current.paused) {
+          ref.current.pause();
+        }
+      });
+    }
+  };
 }
 
 const performerData = [
@@ -46,7 +58,7 @@ const performerData = [
       { type: "image", src: "/images/performers/chen/Betty_Rig.jpg", alt: "Betty Chen's equipment" },
       { type: "image", src: "/images/performers/chen/Betty_Live-2.jpg", alt: "Betty Chen performance" },
           // Video first
-          { type: "video", src: "/images/performers/chen/Betty_Live.mp4", alt: "Betty Chen live performance video", poster: "/images/performers/chen/Betty_Live1.jpg" },
+          { type: "video", src: "https://res.cloudinary.com/djz8b4fhb/video/upload/v1742584960/concert-stage/performers/chen/betty_live.mp4", alt: "Betty Chen live performance video", poster: "/images/performers/chen/Betty_Live1.jpg" },
       { type: "image", src: "/images/performers/chen/Betty_Live1.jpg", alt: "Betty Chen performing" },
     ],
     carouselPosition: "bottom",
@@ -71,7 +83,7 @@ const performerData = [
       { type: "image", src: "/images/performers/edwards/Ryan_Live-3.jpg", alt: "Ryan Edwards performing" },
       { type: "image", src: "/images/performers/edwards/Ryan_Amp.JPG", alt: "Ryan Edwards' amplifier" },
       // Video first
-      { type: "video", src: "/images/performers/edwards/Ryan_Live.mp4", alt: "Ryan Edwards live performance video", poster: "/images/performers/edwards/Ryan_Live.jpg" },
+      { type: "video", src: "https://res.cloudinary.com/djz8b4fhb/video/upload/v1742584976/concert-stage/performers/edwards/ryan_live.mp4", alt: "Ryan Edwards live performance video", poster: "/images/performers/edwards/Ryan_Live.jpg" },
 
       { type: "image", src: "/images/performers/edwards/Ryan_PreparedGuitar.jpg", alt: "Ryan's prepared guitar" },
       { type: "image", src: "/images/performers/edwards/Ryan_Impliments.jpg", alt: "Ryan's implements" },
@@ -99,7 +111,7 @@ const performerData = [
       { type: "image", src: "/images/performers/welch/Chapman_Pedals.jpg", alt: "Chapman's pedal setup" },
       { type: "image", src: "/images/performers/welch/Chapman_Max.jpg", alt: "Chapman's Max/MSP patch" },
        // Videos first
-       { type: "video", src: "/images/performers/welch/Chapman_Live-1.mp4", alt: "Chapman Welch performance video", poster: "/images/performers/welch/Chapman_Live-1.jpg" },
+       { type: "video", src: "https://res.cloudinary.com/djz8b4fhb/video/upload/v1742584986/concert-stage/performers/welch/chapman_live_1.mp4", alt: "Chapman Welch performance video", poster: "/images/performers/welch/Chapman_Live-1.jpg" },
       { type: "image", src: "/images/performers/welch/Champman_Max+Controllers.jpg", alt: "Chapman's controllers" },
       { type: "image", src: "/images/performers/welch/Chapman_Live-1.jpg", alt: "Chapman Welch performing" },
     ],
@@ -126,7 +138,7 @@ const performerData = [
       { type: "image", src: "/images/performers/patton/KP_Live-5.jpg", alt: "Kevin Patton performance" },
 
       // MP4 format
-      { type: "video", src: "/images/performers/patton/KP_Live.mp4", alt: "Kevin Patton live performance video", poster: "/images/performers/patton/KP_Live-1.jpg" },
+      { type: "video", src: "https://res.cloudinary.com/djz8b4fhb/video/upload/v1742584996/concert-stage/performers/patton/kp_live.mp4", alt: "Kevin Patton live performance video", poster: "/images/performers/patton/KP_Live-1.jpg" },
 
       { type: "image", src: "/images/performers/patton/KP_Max.jpg", alt: "Kevin's Max/MSP patch" },
       { type: "image", src: "/images/performers/patton/KP_Pedals.JPG", alt: "Kevin's pedal setup" },
@@ -157,7 +169,7 @@ const performerData = [
       { type: "image", src: "/images/performers/doyle/Kelly_Amp.JPG", alt: "Kelly's amplifier" },
       { type: "image", src: "/images/performers/doyle/Kelly_Pedals.jpg", alt: "Kelly's pedal setup" },
       // Video first
-      { type: "video", src: "/images/performers/doyle/Kelly_Live-3.mp4", alt: "Kelly Doyle live performance video", poster: "/images/performers/doyle/Kelly_Live.jpg" },
+      { type: "video", src: "https://res.cloudinary.com/djz8b4fhb/video/upload/v1742585028/concert-stage/performers/doyle/kelly_live_3.mp4", alt: "Kelly Doyle live performance video", poster: "/images/performers/doyle/Kelly_Live.jpg" },
       { type: "image", src: "/images/performers/doyle/Kelly_Pedals-2.jpg", alt: "Kelly's pedals close-up" },
       { type: "image", src: "/images/performers/doyle/Kelly_Live.jpg", alt: "Kelly Doyle performing" },
     ],
@@ -182,8 +194,8 @@ const performerData = [
       { type: "image", src: "/images/performers/trapani/Trapani_Live-2.jpg", alt: "Christopher Trapani performance" },
       { type: "image", src: "/images/performers/trapani/Trapani_Amp.JPG", alt: "Trapani's amplifier" },
        // Videos first
-       { type: "video", src: "/images/performers/trapani/Trapani_Live.mp4", alt: "Christopher Trapani live performance", poster: "/images/performers/trapani/Trapani_Live-1.jpg" },
-       { type: "video", src: "/images/performers/misc/Jeff-Trapani_Live.mp4", alt: "Jeff & Trapani performance", poster: "/images/performers/trapani/Trapani_Live-2.jpg" },
+       { type: "video", src: "https://res.cloudinary.com/djz8b4fhb/video/upload/v1742585050/concert-stage/performers/trapani/trapani_live.mp4", alt: "Christopher Trapani live performance", poster: "/images/performers/trapani/Trapani_Live-1.jpg" },
+       { type: "video", src: "https://res.cloudinary.com/djz8b4fhb/video/upload/v1742585068/concert-stage/performers/duets/jeff_trapani_live.mp4", alt: "Jeff & Trapani performance", poster: "/images/performers/trapani/Trapani_Live-2.jpg" },
 
       { type: "image", src: "/images/performers/trapani/Trapani_Pedals.jpg", alt: "Trapani's pedal setup" },
       { type: "image", src: "/images/performers/trapani/Trapani_Max.jpg", alt: "Trapani's Max/MSP patch" },
@@ -210,8 +222,8 @@ const performerData = [
       { type: "image", src: "/images/performers/snyder/JeffSillyFace.JPG", alt: "Jeff making a silly face" },
       { type: "image", src: "/images/performers/snyder/Jeff_Pedals.JPG", alt: "Jeff's pedal setup" },
          // Videos first
-         { type: "video", src: "/images/performers/snyder/Jeff_Live-2.mp4", alt: "Jeff Snyder performance video", poster: "/images/performers/snyder/Jeff_Live-1.jpg" },
-         { type: "video", src: "/images/performers/misc/Jeff-Trapani_Live.mp4", alt: "Jeff & Trapani performance", poster: "/images/performers/snyder/Jeff-trapani_Live-1.jpg" },
+         { type: "video", src: "https://res.cloudinary.com/djz8b4fhb/video/upload/v1742585080/concert-stage/performers/snyder/jeff_live_2.mp4", alt: "Jeff Snyder performance video", poster: "/images/performers/snyder/Jeff_Live-1.jpg" },
+         { type: "video", src: "https://res.cloudinary.com/djz8b4fhb/video/upload/v1742585068/concert-stage/performers/duets/jeff_trapani_live.mp4", alt: "Jeff & Trapani performance", poster: "/images/performers/snyder/Jeff-trapani_Live-1.jpg" },
       { type: "image", src: "/images/performers/snyder/Jeff_mixer.JPG", alt: "Jeff's mixer setup" },
       { type: "image", src: "/images/performers/snyder/Jeff_Live-1.jpg", alt: "Jeff Snyder performing" },
     ],
