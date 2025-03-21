@@ -31,6 +31,11 @@ const Card = ({
     style.backgroundImage = `url(${mediaItem.src})`;
     style.backgroundSize = 'cover';
     style.backgroundPosition = 'center';
+  } else if (mediaItem && mediaItem.type === 'video' && mediaItem.poster) {
+    // Use poster image for videos
+    style.backgroundImage = `url(${mediaItem.poster})`;
+    style.backgroundSize = 'cover';
+    style.backgroundPosition = 'center';
   } else {
     style.backgroundColor = '#111';
   }
