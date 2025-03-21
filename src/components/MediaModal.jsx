@@ -1,11 +1,33 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+// Reference the global video reference holder if it exists
+if (typeof window !== 'undefined' && !window.activeVideoRefs) {
+  window.activeVideoRefs = new Set();
+}
+
 const MediaModal = ({ media, onClose, performerName, performerPiece, performerInstrument }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [videoPreloaded, setVideoPreloaded] = useState(false);
   const videoRef = useRef(null);
+  
+  // Register video reference when mounted and remove when unmounted
+  useEffect(() => {
+    if (media.type === 'video' && videoRef.current) {
+      // Add to active refs
+      if (window.activeVideoRefs) {
+        window.activeVideoRefs.add(videoRef);
+      }
+    }
+    
+    return () => {
+      // Remove from active refs
+      if (window.activeVideoRefs && videoRef.current) {
+        window.activeVideoRefs.delete(videoRef);
+      }
+    };
+  }, [videoRef.current]);
   
   // Use the global video cache
   useEffect(() => {
@@ -71,10 +93,23 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
               `${media.src}?v=${timestamp}`;
             videoRef.current.load();
           }
+
+
+
+
         }
         
         // Delay the play slightly to let any source updates complete
         setTimeout(() => {
+          // Pause all other videos first to prevent AbortError
+          if (window.activeVideoRefs) {
+            window.activeVideoRefs.forEach(ref => {
+              if (ref !== videoRef && ref.current && !ref.current.paused) {
+                ref.current.pause();
+              }
+            });
+          }
+          
           const playPromise = videoRef.current.play();
           
           if (playPromise !== undefined) {
@@ -183,23 +218,7 @@ const MediaModal = ({ media, onClose, performerName, performerPiece, performerIn
                 />
               </video>
               
-              {/* Indication when video is ready */}
-              {!isPlaying && videoPreloaded && (
-                <div style={{
-                  position: 'absolute',
-                  bottom: '40px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  backgroundColor: 'rgba(0,0,0,0.6)',
-                  color: 'white',
-                  padding: '6px 12px',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  zIndex: 10
-                }}>
-                  Video is ready. Click play to start.
-                </div>
-              )}
+              {/* Ready state indicator removed */}
               
               {/* Play button for videos */}
               {!isPlaying && (

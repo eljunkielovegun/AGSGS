@@ -1,5 +1,10 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 
+// Create a global video reference holder
+if (typeof window !== 'undefined' && !window.activeVideoRefs) {
+  window.activeVideoRefs = new Set();
+}
+
 const InPlaceMediaModal = ({ 
   media, 
   onClose, 
@@ -41,6 +46,23 @@ const InPlaceMediaModal = ({
       window.removeEventListener('orientationchange', checkDevice);
     };
   }, []);
+  
+  // Register video reference when mounted and remove when unmounted
+  useEffect(() => {
+    if (currentMedia.type === 'video' && videoRef.current) {
+      // Add to active refs
+      if (window.activeVideoRefs) {
+        window.activeVideoRefs.add(videoRef);
+      }
+    }
+    
+    return () => {
+      // Remove from active refs
+      if (window.activeVideoRefs && videoRef.current) {
+        window.activeVideoRefs.delete(videoRef);
+      }
+    };
+  }, [videoRef.current]);
   
   // Find initial media index
   useEffect(() => {
@@ -167,6 +189,15 @@ const InPlaceMediaModal = ({
         
         // Delay the play slightly to let any source updates complete
         setTimeout(() => {
+          // Pause all other videos first to prevent AbortError
+          if (window.activeVideoRefs) {
+            window.activeVideoRefs.forEach(ref => {
+              if (ref !== videoRef && ref.current && !ref.current.paused) {
+                ref.current.pause();
+              }
+            });
+          }
+          
           const playPromise = videoRef.current.play();
           
           if (playPromise !== undefined) {
@@ -642,24 +673,7 @@ const handleTouchEnd = (e) => {
                 </p>
               </video>
               
-              {/* Fallback message for errors */}
-              {!isPlaying && videoPreloaded && (
-                <div style={{
-                  position: 'absolute',
-                  top: '70%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  backgroundColor: 'rgba(0,0,0,0.6)',
-                  color: 'white',
-                  padding: '10px',
-                  borderRadius: '5px',
-                  fontSize: '12px',
-                  textAlign: 'center',
-                  zIndex: 5
-                }}>
-                  Video is ready. Click play to start.
-                </div>
-              )}
+              {/* Ready state indicator removed */}
               
               {/* Custom controls instead of native controls */}
               <div style={{
